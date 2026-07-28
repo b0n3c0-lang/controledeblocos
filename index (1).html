@@ -1,0 +1,1699 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Controle de Blocos - FonTech</title>
+
+    <!-- PWA: manifest e ícones -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#256b46">
+    <link rel="icon" href="icon-192.png">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Controle Blocos">
+    <meta name="mobile-web-app-capable" content="yes">
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --primary: #256b46;
+            --primary-light: #348a5c;
+            --secondary: #1a365d;
+            --bg-body: #f4f6f8;
+            --bg-card: #ffffff;
+            --text-main: #2d3748;
+            --text-muted: #718096;
+            --danger: #e53e3e;
+            --success: #38a169;
+            --border: #e2e8f0;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        [data-theme="dark"] {
+            --primary: #348a5c;
+            --primary-light: #48bb78;
+            --secondary: #2b6cb0;
+            --bg-body: #1a202c;
+            --bg-card: #2d3748;
+            --text-main: #f7fafc;
+            --text-muted: #a0aec0;
+            --border: #4a5568;
+            --danger: #fc8181;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; transition: background-color 0.3s, color 0.3s; }
+        body { background-color: var(--bg-body); color: var(--text-main); overflow-x: hidden; }
+
+        header {
+            background: linear-gradient(135deg, var(--secondary) 0%, var(--primary) 100%);
+            color: white; padding: 15px 20px; display: flex; justify-content: space-between;
+            align-items: center; position: sticky; top: 0; z-index: 100; box-shadow: var(--shadow);
+        }
+        .header-left { display: flex; align-items: center; gap: 12px; }
+        .header-right { display: flex; align-items: center; gap: 12px; }
+        .menu-btn, .icon-btn { background: none; border: none; color: white; cursor: pointer; display:flex; align-items:center; }
+        .login-badge { background: rgba(255,255,255,0.2); padding: 5px 12px; border-radius: 20px; font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; gap: 5px; }
+        .login-badge:hover { background: rgba(255,255,255,0.3); }
+
+        .sidebar {
+            position: fixed; top: 0; left: -280px; width: 280px; height: 100vh;
+            background-color: var(--bg-card); box-shadow: var(--shadow); z-index: 200;
+            transition: left 0.3s ease; display: flex; flex-direction: column;
+        }
+        .sidebar.open { left: 0; }
+        .overlay {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(0,0,0,0.5); z-index: 150; display: none; opacity: 0; transition: opacity 0.3s;
+        }
+        .overlay.active { display: block; opacity: 1; }
+
+        .sidebar-header { padding: 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;}
+        .sidebar-header .brand { display: flex; align-items: center; gap: 8px; }
+        .sidebar-header .brand svg { color: var(--primary); }
+        .sidebar-menu { list-style: none; padding: 20px 0; flex-grow: 1; overflow-y: auto;}
+        .sidebar-menu li { padding: 12px 20px; display: flex; align-items: center; gap: 15px; cursor: pointer; color: var(--text-main); font-weight: 600; }
+        .sidebar-menu li:hover, .sidebar-menu li.active { background-color: rgba(46, 139, 87, 0.1); color: var(--primary); border-left: 4px solid var(--primary); }
+        .sidebar-menu svg { width: 22px; height: 22px; fill: currentColor; }
+        .sidebar-footer { padding: 15px; text-align: center; font-size: 0.75rem; color: var(--text-muted); border-top: 1px solid var(--border); }
+
+        main { padding: 20px; max-width: 1200px; margin: 0 auto; padding-bottom: 80px; }
+        .view { display: none; animation: fadeIn 0.4s ease; }
+        .view.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .grid-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; margin-bottom: 20px; }
+        .card { background: var(--bg-card); padding: 20px; border-radius: 12px; box-shadow: var(--shadow); border: 1px solid var(--border); }
+        .card h3 { font-size: 0.85rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 10px; }
+        .card .value { font-size: 1.8rem; font-weight: 700; color: var(--primary); }
+        .card.negative .value { color: var(--danger); }
+
+        .luna-box { background: linear-gradient(135deg, rgba(37,107,70,0.1) 0%, rgba(26,54,93,0.1) 100%); border-left: 4px solid var(--primary); display: flex; gap: 15px; align-items: flex-start; }
+        .luna-icon svg { width: 40px; height: 40px; fill: var(--primary); }
+        .luna-text h4 { color: var(--primary); margin-bottom: 5px; display: flex; align-items: center; gap: 5px; }
+
+        .form-group { margin-bottom: 15px; position: relative; }
+        .form-group label { display: block; font-size: 0.85rem; margin-bottom: 5px; font-weight: 600; color: var(--text-muted); }
+        .form-control { width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-body); color: var(--text-main); font-size: 1rem; }
+        .form-control:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(46, 139, 87, 0.2); }
+        .btn { padding: 10px 20px; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; transition: 0.2s; }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover { background: var(--primary-light); }
+        .btn-danger { background: var(--danger); color: white; }
+
+        .data-table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 0.9rem; }
+        .data-table th, .data-table td { padding: 12px; text-align: left; border-bottom: 1px solid var(--border); }
+        .data-table th { color: var(--text-muted); text-transform: uppercase; font-size: 0.75rem; white-space: nowrap; }
+        .negative-text { color: var(--danger) !important; font-weight: bold; }
+        .progress-container { width: 100%; background: var(--border); border-radius: 10px; height: 10px; margin-top: 8px; overflow: hidden; }
+        .progress-bar { height: 100%; background: var(--primary); border-radius: 10px; transition: width 0.4s; }
+        .progress-bar.over { background: var(--danger); }
+
+        .modal { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.6); display: none; justify-content: center; align-items: center; z-index: 300; padding: 20px; }
+        .modal.active { display: flex; }
+        .modal-content { background: var(--bg-card); padding: 25px; border-radius: 12px; width: 100%; max-width: 420px; max-height: 90vh; overflow-y: auto; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
+        .modal-header { display: flex; justify-content: space-between; margin-bottom: 15px; align-items: center; }
+        .modal-header h3 { font-size: 1.2rem; }
+        .close-btn { background: none; border: none; cursor: pointer; color: var(--text-muted); }
+
+        .tag-user { font-size: 0.7rem; background: var(--border); padding: 2px 6px; border-radius: 4px; margin-left: 5px; color: var(--text-muted); }
+        .flex-row { display: flex; gap: 15px; flex-wrap: wrap; }
+        .flex-row > * { flex: 1; min-width: 150px; }
+
+        .chart-container { position: relative; height: 260px; width: 100%; }
+
+        .clickable-row { cursor: pointer; }
+        .clickable-row:hover { background-color: rgba(46, 139, 87, 0.1); }
+        .back-btn { border: 1px solid var(--border); padding: 5px 10px; font-size: 0.8rem; color: var(--text-main); background: transparent; }
+
+        .autocomplete-wrapper { position: relative; }
+        .autocomplete-list {
+            position: absolute; top: calc(100% + 4px); left: 0; right: 0; background: var(--bg-card);
+            border: 1px solid var(--border); border-radius: 8px; max-height: 220px; overflow-y: auto;
+            z-index: 60; display: none; box-shadow: var(--shadow);
+        }
+        .autocomplete-list.active { display: block; }
+        .autocomplete-item { padding: 12px; cursor: pointer; font-size: 0.95rem; border-bottom: 1px solid var(--border); }
+        .autocomplete-item:last-child { border-bottom: none; }
+        .autocomplete-item:hover, .autocomplete-item:active { background: rgba(46, 139, 87, 0.15); }
+        .autocomplete-empty { padding: 12px; color: var(--text-muted); font-size: 0.85rem; }
+        .row-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+        .btn-sm { padding: 4px 8px !important; font-size: 0.72rem !important; }
+        .hint-box { font-size: 0.8rem; color: var(--text-muted); margin-top: 6px; padding: 8px 10px; background: rgba(46,139,87,0.08); border-radius: 6px; display: none; }
+        .badge { padding: 3px 8px; border-radius: 10px; font-size: 0.7rem; color: white; display:inline-block; }
+
+        @media (min-width: 960px) {
+            .sidebar { left: 0 !important; box-shadow: none; border-right: 1px solid var(--border); }
+            .overlay { display: none !important; }
+            .menu-btn { display: none; }
+            .sidebar-header .close-btn { display: none; }
+            main { margin-left: 280px; max-width: 1300px; padding: 30px 40px; }
+        }
+    </style>
+</head>
+<body>
+
+    <svg style="display: none;">
+        <symbol id="icon-menu" viewBox="0 0 24 24"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></symbol>
+        <symbol id="icon-dashboard" viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></symbol>
+        <symbol id="icon-leaf" viewBox="0 0 24 24"><path d="M17 8C8 10 5.9 16.17 3.82 21.34l1.89.66l.95-2.3c3.49-2.78 8.1-4.7 14.34-5.38C21 10.9 19.98 8.97 17 8zM6.92 18.03c1.72-3.8 5.76-7.85 13.04-8.72c-.89 1.4-1.74 3.42-1.92 5.56C12.39 15.35 8.92 16.78 6.92 18.03z"/></symbol>
+        <symbol id="icon-harvester" viewBox="0 0 24 24"><path d="M2 17h20v2H2zm1.5-11h3V5h-3zm4 0h3V5h-3zm4 0h3V5h-3zm4 0h3V5h-3zM2 13h20v2H2zm3-5h14v3H5z"/></symbol>
+        <symbol id="icon-up" viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 9h-2V7H8v5H6v2h2v5h2v-5h2v-2zm4 5h-2V7h2v10z"/></symbol>
+        <symbol id="icon-export" viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7l7-7zM5 18v2h14v-2H5z"/></symbol>
+        <symbol id="icon-import" viewBox="0 0 24 24"><path d="M5 20h14v-2H5v2zM19 9h-4V3H9v6H5l7 7 7-7z" transform="rotate(180 12 12)"/></symbol>
+        <symbol id="icon-settings" viewBox="0 0 24 24"><path d="M19.14,12.94c0.04-0.3,0.06-0.61,0.06-0.94c0-0.32-0.02-0.64-0.06-0.94l2.03-1.58c0.18-0.14,0.23-0.41,0.12-0.61 l-1.92-3.32c-0.12-0.22-0.37-0.29-0.59-0.22l-2.39,0.96c-0.5-0.38-1.03-0.7-1.62-0.94L14.4,2.81c-0.04-0.24-0.24-0.41-0.48-0.41 h-3.84c-0.24,0-0.43,0.17-0.47,0.41L9.25,5.35C8.66,5.59,8.12,5.92,7.63,6.29L5.24,5.33c-0.22-0.08-0.47,0-0.59,0.22L2.73,8.87 C2.62,9.08,2.66,9.34,2.86,9.48l2.03,1.58C4.84,11.36,4.8,11.69,4.8,12s0.02,0.64,0.06,0.94l-2.03,1.58 c-0.18,0.14-0.23,0.41-0.12,0.61l1.92,3.32c0.12,0.22,0.37,0.29,0.59,0.22l2.39-0.96c0.5,0.38,1.03,0.7,1.62,0.94l0.36,2.54 c0.05,0.24,0.24,0.41,0.48,0.41h3.84c0.24,0,0.43-0.17,0.47-0.41l0.36-2.54c0.59-0.24,1.13-0.56,1.62-0.94l2.39,0.96 c0.22,0.08,0.47,0,0.59-0.22l1.92-3.32c0.12-0.22,0.07-0.49-0.12-0.61L19.14,12.94z M12,15.6c-1.98,0-3.6-1.62-3.6-3.6 s1.62-3.6,3.6-3.6s3.6,1.62,3.6,3.6S13.98,15.6,12,15.6z"/></symbol>
+        <symbol id="icon-user" viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4s-4 1.79-4 4s1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></symbol>
+        <symbol id="icon-close" viewBox="0 0 24 24"><path d="M19 6.41L17.59 5L12 10.59L6.41 5L5 6.41L10.59 12L5 17.59L6.41 19L12 13.41L17.59 19L19 17.59L13.41 12z"/></symbol>
+        <symbol id="icon-moon" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></symbol>
+        <symbol id="icon-luna" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm0-14c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6-2.69-6-6-6zm0 10c-2.21 0-4-1.79-4-4s1.79-4 4-4 4 1.79 4 4-1.79 4-4 4z"/></symbol>
+        <symbol id="icon-eucalipto" viewBox="0 0 24 24">
+            <rect x="11" y="13.5" width="2" height="8.5" rx="0.6"/>
+            <circle cx="12" cy="6" r="4.3"/>
+            <circle cx="7.3" cy="9.8" r="3.2"/>
+            <circle cx="16.7" cy="9.8" r="3.2"/>
+        </symbol>
+    </svg>
+
+    <header>
+        <div class="header-left">
+            <button class="menu-btn" onclick="toggleSidebar()"><svg width="26" height="26" fill="white"><use href="#icon-menu"></use></svg></button>
+            <svg width="26" height="26" fill="white"><use href="#icon-eucalipto"></use></svg>
+            <h2>Controle de Blocos</h2>
+        </div>
+        <div class="header-right">
+            <button class="icon-btn" onclick="toggleTheme()" title="Claro/Escuro"><svg width="22" height="22" fill="white"><use href="#icon-moon"></use></svg></button>
+            <div class="login-badge" id="btn-login" onclick="openLoginModal()">
+                <svg width="18" height="18" fill="white"><use href="#icon-user"></use></svg>
+                <span id="txt-user">Entrar</span>
+            </div>
+        </div>
+    </header>
+
+    <div class="overlay" id="overlay" onclick="toggleSidebar()"></div>
+    <nav class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="brand">
+                <svg width="24" height="24"><use href="#icon-eucalipto"></use></svg>
+                <h2>Controle</h2>
+            </div>
+            <button class="close-btn" onclick="toggleSidebar()"><svg width="24" height="24" fill="currentColor"><use href="#icon-close"></use></svg></button>
+        </div>
+        <ul class="sidebar-menu">
+            <li onclick="showView('dashboard')" class="active" id="nav-dashboard"><svg><use href="#icon-dashboard"></use></svg> Dashboard</li>
+            <li onclick="showView('lancamentos')" id="nav-lancamentos"><svg><use href="#icon-leaf"></use></svg> Lançamentos</li>
+            <li onclick="showView('maquinas')" id="nav-maquinas"><svg><use href="#icon-harvester"></use></svg> Máquinas</li>
+            <li onclick="showView('ups')" id="nav-ups"><svg><use href="#icon-up"></use></svg> Gestão UP/Bloco</li>
+            <li onclick="showView('importar')" id="nav-importar"><svg><use href="#icon-import"></use></svg> Importar Excel</li>
+            <li onclick="showView('exportacao')" id="nav-exportacao"><svg><use href="#icon-export"></use></svg> Exportação</li>
+            <li onclick="showView('configuracoes')" id="nav-configuracoes"><svg><use href="#icon-settings"></use></svg> Configurações</li>
+        </ul>
+        <div class="sidebar-footer">
+            Desenvolvido por FonTech Soluções Florestais
+            <div style="display:flex; justify-content:center; align-items:center; gap:4px; margin-top:6px;">
+                <svg width="20" height="20" fill="var(--primary)"><use href="#icon-eucalipto"></use></svg>
+                <svg width="20" height="20" fill="var(--primary)"><use href="#icon-eucalipto"></use></svg>
+                <svg width="20" height="20" fill="var(--primary)"><use href="#icon-eucalipto"></use></svg>
+            </div>
+        </div>
+    </nav>
+
+    <main>
+        <section id="view-dashboard" class="view active">
+            <div class="card luna-box" style="margin-bottom: 20px;">
+                <div class="luna-icon"><svg><use href="#icon-luna"></use></svg></div>
+                <div class="luna-text" id="luna-insights">
+                    <h4>Assistente Luna 🌙</h4>
+                    <p>Olá, Fontinelle! Analisando os dados da operação para te dar o raio-x exato...</p>
+                </div>
+            </div>
+
+            <div class="grid-cards">
+                <div class="card"><h3>Diário Árvores (Hj)</h3><div class="value" id="dash-arv-diaria">0</div></div>
+                <div class="card"><h3>Diário M³ (Hj)</h3><div class="value" id="dash-m3-diaria">0.00</div></div>
+                <div class="card"><h3>Média Diária M³</h3><div class="value" id="dash-media-diaria">0.00</div></div>
+                <div class="card"><h3>Acumulado M³ Total</h3><div class="value" id="dash-m3-total">0.00</div></div>
+            </div>
+
+            <div class="grid-cards">
+                <div class="card" style="grid-column: span 2;">
+                    <h3>Desempenho Geral (últimos 7 dias com lançamento)</h3>
+                    <div class="chart-container">
+                        <canvas id="chartGeral"></canvas>
+                    </div>
+                </div>
+                <div class="card">
+                    <h3>Ranking de Máquinas (M³)</h3>
+                    <div id="dash-ranking"></div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>Resumo de Blocos Ativos</h3>
+                <div id="dash-blocos-ativos">Nenhum bloco ativo no momento.</div>
+            </div>
+        </section>
+
+        <section id="view-lancamentos" class="view">
+            <div class="card">
+                <h3 style="display:flex; justify-content:space-between;">
+                    Novo Apontamento de Árvores
+                    <span id="tag-lancamento-user" class="tag-user"></span>
+                </h3>
+                <form id="form-lancamento" onsubmit="event.preventDefault(); salvarLancamento();">
+                    <div class="flex-row">
+                        <div class="form-group">
+                            <label>Máquina (Prefixo/Nome)</label>
+                            <div class="autocomplete-wrapper">
+                                <input type="text" class="form-control" id="lan-maquina" placeholder="Digite para buscar..." required autocomplete="off"
+                                    oninput="mostrarSugestoesMaquina(this.value)" onfocus="mostrarSugestoesMaquina(this.value)">
+                                <div class="autocomplete-list" id="sugestoes-maquina"></div>
+                            </div>
+                            <div class="hint-box" id="lan-maquina-hint"></div>
+                        </div>
+                        <div class="form-group">
+                            <label>Bloco</label>
+                            <div class="autocomplete-wrapper">
+                                <input type="text" class="form-control" id="lan-bloco" placeholder="Digite o Bloco (ex: 16)..." required autocomplete="off"
+                                    oninput="mostrarSugestoesBloco(this.value)" onfocus="mostrarSugestoesBloco(this.value)">
+                                <div class="autocomplete-list" id="sugestoes-bloco"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex-row">
+                        <div class="form-group">
+                            <label>UP Detectada Automaticamente</label>
+                            <input type="text" class="form-control" id="lan-up-detectada" readonly style="background:var(--border); cursor:not-allowed;" placeholder="Selecione o bloco acima...">
+                        </div>
+                        <div class="form-group">
+                            <label>Quantidade de Árvores Cortadas</label>
+                            <input type="number" step="1" min="1" class="form-control" id="lan-arvores" required>
+                        </div>
+                    </div>
+
+                    <div id="lan-bloco-info" style="display:none; padding:15px; background:var(--bg-body); border-radius:8px; margin-bottom:15px; border: 1px solid var(--border);">
+                        <h4 style="margin-bottom:10px; color:var(--primary);">Status do Bloco Selecionado</h4>
+                        <div class="flex-row" style="font-size:0.9rem;">
+                            <div><strong>VMi:</strong> <span id="lan-info-vmi">0</span></div>
+                            <div><strong>Planejado:</strong> <span id="lan-info-plan-arv">0</span> árv / <span id="lan-info-plan-m3">0</span> m³</div>
+                            <div><strong>Saldo Restante:</strong> <span id="lan-info-rest-arv">0</span> árv / <span id="lan-info-rest-m3">0</span> m³</div>
+                        </div>
+                        <div class="progress-container">
+                            <div class="progress-bar" id="lan-info-bar" style="width: 0%;"></div>
+                        </div>
+                    </div>
+
+                    <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                        <button type="submit" class="btn btn-primary"><svg width="18" height="18" fill="white"><use href="#icon-leaf"></use></svg> Salvar Apontamento</button>
+                        <button type="button" class="btn btn-danger" onclick="finalizarBlocoAtual()"><svg width="18" height="18" fill="white"><use href="#icon-close"></use></svg> Finalizar Bloco</button>
+                    </div>
+                </form>
+            </div>
+        </section>
+
+        <section id="view-maquinas" class="view">
+            <div class="card">
+                <h3 style="display:flex; justify-content:space-between;">
+                    Gestão de Máquinas
+                    <button class="btn btn-primary" style="padding: 5px 10px; font-size:0.8rem;" onclick="abrirModalMaquina()">+ Nova Máquina</button>
+                </h3>
+                <div style="overflow-x: auto;">
+                    <table class="data-table">
+                        <thead><tr><th>Prefixo/Nome</th><th>Status</th><th>Bloco Atual</th><th>Árvores Acum.</th><th>M³ Acum.</th><th style="min-width:280px;">Ações</th></tr></thead>
+                        <tbody id="tb-maquinas"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <section id="view-hist-maquina" class="view">
+            <div class="card">
+                <h3 style="display:flex; justify-content:space-between; align-items:center;">
+                    <span id="hist-maq-title-view">Histórico da Máquina</span>
+                    <button class="btn back-btn" onclick="showView('maquinas')">⬅ Voltar para Máquinas</button>
+                </h3>
+                <div style="overflow-x: auto; margin-top: 15px;">
+                    <table class="data-table">
+                        <thead><tr><th>Data</th><th>UP</th><th>Bloco</th><th>Árvores</th><th>M³</th><th>Balanço do Bloco</th><th>Ações</th></tr></thead>
+                        <tbody id="tb-hist-maquina-view"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <section id="view-ups" class="view">
+            <div class="card">
+                <h3 style="display:flex; justify-content:space-between; align-items:center;">
+                    Base de UPs & Busca Geral
+                    <div style="display:flex; gap:10px;">
+                        <input type="text" class="form-control" id="input-busca-geral" placeholder="Buscar UP ou Bloco..." oninput="filtrarUPsBlocos()" style="width:200px; padding:6px 10px; font-size:0.85rem;">
+                        <button class="btn btn-primary" style="padding: 5px 10px; font-size:0.8rem;" onclick="abrirModalUP()">+ Nova UP</button>
+                    </div>
+                </h3>
+                <p style="font-size:0.8rem; color:var(--text-muted); margin-top:8px;">Clique em uma UP na lista para ver o histórico completo e gerenciar seus blocos.</p>
+                <div style="overflow-x: auto;">
+                    <table class="data-table">
+                        <thead><tr><th>UP</th><th>VMi</th><th>Árv/Ha</th><th>Área (Ha)</th><th>Árvores Tot.</th><th>M³ Tot.</th><th style="min-width:210px;">Ações</th></tr></thead>
+                        <tbody id="tb-ups"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <section id="view-up-detail" class="view">
+            <div class="card" style="margin-bottom: 20px;">
+                <h3 style="display:flex; justify-content:space-between; align-items:center;">
+                    <span id="upd-title">UP</span>
+                    <button class="btn back-btn" onclick="showView('ups')">⬅ Voltar para UPs</button>
+                </h3>
+                <div class="grid-cards" style="margin-top:15px; margin-bottom:0;">
+                    <div class="card"><h3>VMi</h3><div class="value" id="upd-vmi">0</div></div>
+                    <div class="card"><h3>Árv/Ha</h3><div class="value" id="upd-arvha">0</div></div>
+                    <div class="card"><h3>Área (Ha)</h3><div class="value" id="upd-area">0</div></div>
+                    <div class="card"><h3>M³ Total Planejado</h3><div class="value" id="upd-m3total">0</div></div>
+                </div>
+            </div>
+
+            <div class="card" style="margin-bottom: 20px;">
+                <h3 style="display:flex; justify-content:space-between; align-items:center;">
+                    Blocos desta UP
+                    <button class="btn btn-primary" style="padding: 5px 10px; font-size:0.8rem;" onclick="abrirModalBloco()">+ Novo Bloco</button>
+                </h3>
+                <p style="font-size:0.8rem; color:var(--text-muted); margin-top:8px;">Clique em um bloco para ver o histórico de lançamentos e o saldo em m³.</p>
+                <div style="overflow-x: auto;">
+                    <table class="data-table">
+                        <thead><tr><th>Bloco</th><th>Status</th><th>Área (Ha)</th><th>Plan. (Árv / M³)</th><th>Realiz. (Árv / M³)</th><th>Saldo</th><th style="min-width:150px;">Ações</th></tr></thead>
+                        <tbody id="tb-blocos">
+                            <tr><td colspan="7" style="text-align:center; color:var(--text-muted);">Nenhum bloco cadastrado nesta UP ainda.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>Histórico de Lançamentos da UP</h3>
+                <div style="overflow-x: auto; margin-top: 15px;">
+                    <table class="data-table">
+                        <thead><tr><th>Data</th><th>Bloco</th><th>Máquina</th><th>Árvores</th><th>M³</th><th>Ações</th></tr></thead>
+                        <tbody id="tb-hist-up">
+                            <tr><td colspan="6" style="text-align:center; color:var(--text-muted);">Nenhum lançamento nesta UP ainda.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <section id="view-bloco-detail" class="view">
+            <div class="card" style="margin-bottom: 20px;">
+                <h3 style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+                    <span id="bd-title">Bloco</span>
+                    <div style="display:flex; gap:8px;">
+                        <button class="btn btn-danger btn-sm" onclick="finalizarBlocoAtualDetail()">Finalizar Bloco</button>
+                        <button class="btn back-btn" onclick="voltarParaUPDetail()">⬅ Voltar para UP</button>
+                    </div>
+                </h3>
+                <div class="flex-row" style="margin-top:12px; font-size:0.95rem;">
+                    <div><strong>Status:</strong> <span id="bd-status"></span></div>
+                    <div><strong>Área:</strong> <span id="bd-area"></span> ha</div>
+                    <div><strong>Planejado:</strong> <span id="bd-plan"></span></div>
+                    <div><strong>Realizado:</strong> <span id="bd-realiz"></span></div>
+                </div>
+                <div style="margin-top:15px;">
+                    <strong>Saldo do Bloco (m³):</strong> <span id="bd-saldo" style="font-size:1.3rem; font-weight:700;"></span>
+                    <span id="bd-pct" style="color:var(--text-muted); font-size:0.85rem;"></span>
+                    <div class="progress-container"><div class="progress-bar" id="bd-bar" style="width:0%;"></div></div>
+                </div>
+            </div>
+            <div class="card">
+                <h3>Lançamentos do Bloco</h3>
+                <div style="overflow-x: auto; margin-top: 15px;">
+                    <table class="data-table">
+                        <thead><tr><th>Data</th><th>Máquina</th><th>Árvores</th><th>M³</th><th>Ações</th></tr></thead>
+                        <tbody id="tb-lanc-bloco">
+                            <tr><td colspan="5" style="text-align:center; color:var(--text-muted);">Nenhum lançamento neste bloco ainda.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <section id="view-importar" class="view">
+            <div class="card">
+                <h3>Importar Apontamentos (Excel/CSV)</h3>
+                <p style="font-size:0.85rem; color:var(--text-muted); margin: 10px 0 15px;">
+                    A planilha deve ter as colunas <b>Máquina</b>, <b>Bloco</b> e <b>Árvores</b> (opcional: <b>Data</b> no formato dd/mm/aaaa).
+                    A máquina e o bloco precisam já estar cadastrados no sistema com o mesmo nome, e o bloco precisa estar com status "Colhendo".
+                </p>
+                <input type="file" class="form-control" id="file-importar" accept=".xlsx,.xls,.csv">
+                <button class="btn btn-primary" style="margin-top:15px;" onclick="processarImportacao()"><svg width="18" height="18" fill="white"><use href="#icon-import"></use></svg> Processar Planilha</button>
+                <div id="importar-resultado" style="margin-top:15px; font-size:0.9rem;"></div>
+            </div>
+        </section>
+
+        <section id="view-exportacao" class="view">
+            <div class="card">
+                <h3>Exportar Dados</h3>
+                <div class="form-group" style="margin-top:15px;">
+                    <label>O que deseja exportar?</label>
+                    <select class="form-control" id="exp-tipo" onchange="atualizarFiltrosExportacao()">
+                        <option value="geral">Resumo Geral (todos os lançamentos)</option>
+                        <option value="maquina">Relatório por Máquina (planejado x realizado)</option>
+                        <option value="up">Relatório por UP (planejado x realizado)</option>
+                        <option value="bloco">Relatório por Bloco (planejado x realizado)</option>
+                    </select>
+                </div>
+                <div class="form-group" id="exp-filtro-maquina" style="display:none;">
+                    <label>Selecione a Máquina</label>
+                    <select class="form-control" id="exp-select-maquina"></select>
+                </div>
+                <div class="form-group" id="exp-filtro-up" style="display:none;">
+                    <label>Selecione a UP</label>
+                    <select class="form-control" id="exp-select-up" onchange="atualizarSelectBlocoExportacao()"></select>
+                </div>
+                <div class="form-group" id="exp-filtro-bloco" style="display:none;">
+                    <label>Selecione o Bloco</label>
+                    <select class="form-control" id="exp-select-bloco"></select>
+                </div>
+                <button class="btn btn-primary" onclick="gerarRelatorio()"><svg width="18" height="18" fill="white"><use href="#icon-export"></use></svg> Gerar Relatório</button>
+            </div>
+
+            <div class="card" id="exp-preview" style="display:none;">
+                <h3 id="exp-preview-titulo">Relatório</h3>
+                <div id="exp-preview-resumo" class="grid-cards" style="margin-top:15px; margin-bottom:0;"></div>
+                <div style="overflow-x:auto; margin-top:15px;">
+                    <table class="data-table" id="exp-preview-tabela"></table>
+                </div>
+                <div id="exp-preview-botoes" style="display:flex; gap:10px; flex-wrap:wrap; margin-top:15px;">
+                    <button class="btn btn-primary" onclick="exportarExcel()">📊 Excel (.xlsx)</button>
+                    <button class="btn btn-danger" onclick="exportarPDF()">📄 PDF</button>
+                    <button class="btn" style="background:#25D366; color:white;" onclick="exportarWhatsapp()">💬 WhatsApp</button>
+                </div>
+            </div>
+        </section>
+
+        <section id="view-configuracoes" class="view">
+            <div class="grid-cards">
+                <div class="card">
+                    <h3>Aparência</h3>
+                    <button class="btn btn-primary" onclick="toggleTheme()"><svg width="18" height="18" fill="white"><use href="#icon-moon"></use></svg> Alternar Claro/Escuro</button>
+                </div>
+                <div class="card">
+                    <h3>Sincronização Nuvem (Google Sheets)</h3>
+                    <div class="form-group">
+                        <input type="url" class="form-control" id="conf-sheets" placeholder="Cole o link do Apps Script aqui...">
+                    </div>
+                    <button class="btn btn-primary" onclick="salvarLinkSheets()">Salvar Link</button>
+                </div>
+                <div class="card">
+                    <h3>Acesso / Autenticação</h3>
+                    <p style="font-size: 0.8rem; margin-bottom: 10px; color: var(--text-muted);">Apenas administradores podem fazer lançamentos e cadastros.</p>
+                    <div class="form-group"><input type="text" class="form-control" id="cad-user-id" placeholder="ID ou Nome"></div>
+                    <div class="form-group"><input type="password" class="form-control" id="cad-user-pass" placeholder="Senha"></div>
+                    <button class="btn btn-primary" onclick="cadastrarAdmin()">Cadastrar Admin</button>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <div class="modal" id="modal-login">
+        <div class="modal-content">
+            <div class="modal-header"><h3>Acesso Restrito</h3><button class="close-btn" onclick="closeModal('modal-login')"><svg width="24" height="24" fill="currentColor"><use href="#icon-close"></use></svg></button></div>
+            <div class="form-group"><label>ID / Nome</label><input type="text" class="form-control" id="login-id"></div>
+            <div class="form-group"><label>Senha</label><input type="password" class="form-control" id="login-pass"></div>
+            <button class="btn btn-primary" style="width:100%; justify-content:center;" onclick="realizarLogin()">Entrar</button>
+        </div>
+    </div>
+
+    <div class="modal" id="modal-up">
+        <div class="modal-content">
+            <div class="modal-header"><h3 id="modal-up-titulo">Cadastrar UP</h3><button class="close-btn" onclick="closeModal('modal-up')"><svg width="24" height="24" fill="currentColor"><use href="#icon-close"></use></svg></button></div>
+            <div class="form-group"><label>Número da UP</label><input type="text" class="form-control" id="cad-up-nome"></div>
+            <div class="form-group"><label>VMi</label><input type="number" step="0.0001" class="form-control" id="cad-up-vmi"></div>
+            <div class="form-group"><label>Árvores / Hectare</label><input type="number" step="0.01" class="form-control" id="cad-up-arvha"></div>
+            <div class="form-group"><label>Hectares Totais</label><input type="number" step="0.01" class="form-control" id="cad-up-area"></div>
+            <button class="btn btn-primary" style="width:100%; justify-content:center;" onclick="salvarUP()">Salvar UP</button>
+        </div>
+    </div>
+
+    <div class="modal" id="modal-bloco">
+        <div class="modal-content">
+            <div class="modal-header"><h3 id="modal-bloco-titulo">Cadastrar Bloco na UP</h3><button class="close-btn" onclick="closeModal('modal-bloco')"><svg width="24" height="24" fill="currentColor"><use href="#icon-close"></use></svg></button></div>
+            <div class="form-group"><label>Nome/Num do Bloco</label><input type="text" class="form-control" id="cad-bloco-nome"></div>
+            <div class="form-group"><label>Hectares</label><input type="number" step="0.01" class="form-control" id="cad-bloco-area"></div>
+            <div class="form-group"><label>Status</label>
+                <select class="form-control" id="cad-bloco-status">
+                    <option value="Colhendo">Colhendo</option>
+                    <option value="Fechado">Fechado</option>
+                </select>
+            </div>
+            <button class="btn btn-primary" style="width:100%; justify-content:center;" onclick="salvarBloco()">Salvar Bloco</button>
+        </div>
+    </div>
+
+    <div class="modal" id="modal-maquina">
+        <div class="modal-content">
+            <div class="modal-header"><h3 id="modal-maquina-titulo">Cadastrar Máquina</h3><button class="close-btn" onclick="closeModal('modal-maquina')"><svg width="24" height="24" fill="currentColor"><use href="#icon-close"></use></svg></button></div>
+            <div class="form-group"><label>Prefixo / Nome</label><input type="text" class="form-control" id="cad-maq-nome" style="text-transform: uppercase;"></div>
+            <button class="btn btn-primary" style="width:100%; justify-content:center;" onclick="salvarMaquina()">Salvar Máquina</button>
+        </div>
+    </div>
+
+    <div class="modal" id="modal-trocar-bloco">
+        <div class="modal-content">
+            <div class="modal-header"><h3>Trocar Bloco da Máquina</h3><button class="close-btn" onclick="closeModal('modal-trocar-bloco')"><svg width="24" height="24" fill="currentColor"><use href="#icon-close"></use></svg></button></div>
+            <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:12px;">Máquina: <b id="troca-maquina-nome"></b></p>
+            <div class="form-group">
+                <label>Bloco Atual (onde ela está trabalhando agora)</label>
+                <select class="form-control" id="troca-bloco-select"></select>
+            </div>
+            <button class="btn btn-primary" style="width:100%; justify-content:center;" onclick="salvarTrocaBloco()">Salvar</button>
+        </div>
+    </div>
+
+    <div class="modal" id="modal-lancamento">
+        <div class="modal-content">
+            <div class="modal-header"><h3>Editar Apontamento</h3><button class="close-btn" onclick="closeModal('modal-lancamento')"><svg width="24" height="24" fill="currentColor"><use href="#icon-close"></use></svg></button></div>
+            <div class="form-group"><label>Máquina</label><select class="form-control" id="edit-lanc-maquina"></select></div>
+            <div class="form-group"><label>Bloco</label><select class="form-control" id="edit-lanc-bloco"></select></div>
+            <div class="form-group"><label>Data</label><input type="date" class="form-control" id="edit-lanc-data"></div>
+            <div class="form-group"><label>Árvores Cortadas</label><input type="number" step="1" min="1" class="form-control" id="edit-lanc-arvores"></div>
+            <button class="btn btn-primary" style="width:100%; justify-content:center;" onclick="salvarEdicaoLancamento()">Salvar Alterações</button>
+        </div>
+    </div>
+
+    <script>
+        let db = {
+            ups: [],        // { id, nome, vmi, arvHa, area }
+            blocos: [],     // { id, idUP, nome, area, status: 'Colhendo'|'Fechado' }
+            maquinas: [],   // { id, nome, status: 'Ativa'|'Inativa', blocoAtualId }
+            lancamentos: [],// { id, idMaquina, idUP, idBloco, data, arvores, m3, userId }
+            users: []       // { id, senha }
+        };
+        let currentUser = null;
+        let upSelecionadaParaBlocos = null;
+        let blocoSelecionado = null;
+        let maquinaSelecionada = null;
+        let myChart = null;
+        let maquinaEditId = null;
+        let upEditId = null;
+        let blocoEditId = null;
+        let lancamentoEditId = null;
+        let trocaMaquinaId = null;
+        let relatorioAtual = null;
+
+        function loadData() {
+            const saved = localStorage.getItem('fontech_blocos_db');
+            if(saved) db = JSON.parse(saved);
+
+            if(!db.users) db.users = [];
+            if(db.users.length === 0) {
+                db.users.push({ id: 'admin', senha: '123' });
+            }
+            // Migração: garante campos novos em dados salvos anteriormente
+            db.maquinas.forEach(m => {
+                if(!m.status) m.status = 'Ativa';
+                if(m.blocoAtualId === undefined) m.blocoAtualId = null;
+            });
+            saveData();
+            checkAuth();
+            renderAll();
+        }
+        function saveData() { localStorage.setItem('fontech_blocos_db', JSON.stringify(db)); }
+
+        function checkAuth() {
+            const btn = document.getElementById('txt-user');
+            const tags = document.querySelectorAll('.tag-user');
+            if(currentUser) {
+                btn.innerText = "Sair (" + currentUser + ")";
+                tags.forEach(t => t.innerText = "[ID: " + currentUser + "]");
+            } else {
+                btn.innerText = "Entrar";
+                tags.forEach(t => t.innerText = "");
+            }
+        }
+        function requireAuth() {
+            if(!currentUser) {
+                openLoginModal();
+                return false;
+            }
+            return true;
+        }
+        function openLoginModal() {
+            if(currentUser) { currentUser = null; checkAuth(); alert("Logout realizado!"); return; }
+            document.getElementById('modal-login').classList.add('active');
+        }
+        function realizarLogin() {
+            const id = document.getElementById('login-id').value.trim();
+            const pass = document.getElementById('login-pass').value.trim();
+            const user = db.users.find(u => u.id === id && u.senha === pass);
+            if(user) {
+                currentUser = user.id;
+                closeModal('modal-login');
+                checkAuth();
+                document.getElementById('login-id').value = '';
+                document.getElementById('login-pass').value = '';
+                alert("Bem-vindo, " + id + "!");
+            } else { alert("ID ou Senha incorretos."); }
+        }
+        function cadastrarAdmin() {
+            if(!requireAuth()) return;
+            const id = document.getElementById('cad-user-id').value.trim();
+            const pass = document.getElementById('cad-user-pass').value.trim();
+            if(!id || !pass) return alert("Preencha os campos.");
+            if(db.users.find(u => u.id === id)) return alert("Usuário já existe.");
+            db.users.push({ id, senha: pass });
+            saveData();
+            document.getElementById('cad-user-id').value = ''; document.getElementById('cad-user-pass').value = '';
+            alert("Administrador cadastrado com sucesso!");
+        }
+
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('open');
+            document.getElementById('overlay').classList.toggle('active');
+        }
+        function estaNaView(viewId) {
+            const el = document.getElementById('view-' + viewId);
+            return !!(el && el.classList.contains('active'));
+        }
+        function showView(viewId) {
+            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+            document.querySelectorAll('.sidebar-menu li').forEach(l => l.classList.remove('active'));
+            document.getElementById('view-' + viewId).classList.add('active');
+            const nav = document.getElementById('nav-' + viewId);
+            if(nav) nav.classList.add('active');
+            // Fecha o menu lateral SOMENTE se ele já estava aberto (nunca abre sozinho)
+            if(document.getElementById('sidebar').classList.contains('open')) toggleSidebar();
+            if(viewId === 'dashboard') { atualizarDashboard(); }
+        }
+        function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+        function toggleTheme() {
+            const body = document.body;
+            if(body.getAttribute('data-theme') === 'dark') { body.removeAttribute('data-theme'); }
+            else { body.setAttribute('data-theme', 'dark'); }
+        }
+
+        function calcUP(up) {
+            const arvTotais = up.area * up.arvHa;
+            const m3Totais = arvTotais * up.vmi;
+            return { arvTotais, m3Totais };
+        }
+        function calcBloco(bloco) {
+            const up = db.ups.find(u => u.id === bloco.idUP);
+            if(!up) return null;
+            const planArv = bloco.area * up.arvHa;
+            const planM3 = planArv * up.vmi;
+
+            const lancs = db.lancamentos.filter(l => l.idBloco === bloco.id);
+            const realizArv = lancs.reduce((sum, l) => sum + l.arvores, 0);
+            const realizM3 = lancs.reduce((sum, l) => sum + l.m3, 0);
+
+            // Cálculo direto (sem ramos condicionais) garante que valores negativos
+            // sempre apareçam corretamente, nunca como "undefined"
+            const saldoArv = planArv - realizArv;
+            const saldoM3 = planM3 - realizM3;
+            const perColhido = planArv > 0 ? (realizArv / planArv) * 100 : 0;
+
+            return { up, planArv, planM3, realizArv, realizM3, saldoArv, saldoM3, perColhido };
+        }
+        function getBlocoAtualDaMaquina(idMaquina) {
+            const m = db.maquinas.find(x => x.id === idMaquina);
+            if(!m || !m.blocoAtualId) return null;
+            const b = db.blocos.find(x => x.id === m.blocoAtualId && x.status === 'Colhendo');
+            return b || null;
+        }
+
+        // ---------- CRUD de UPs ----------
+        function abrirModalUP(id = null) {
+            if(!requireAuth()) return;
+            upEditId = id;
+            const u = id ? db.ups.find(x => x.id === id) : null;
+            document.getElementById('cad-up-nome').value = u ? u.nome : '';
+            document.getElementById('cad-up-vmi').value = u ? u.vmi : '';
+            document.getElementById('cad-up-arvha').value = u ? u.arvHa : '';
+            document.getElementById('cad-up-area').value = u ? u.area : '';
+            document.getElementById('modal-up-titulo').innerText = u ? 'Editar UP' : 'Cadastrar UP';
+            document.getElementById('modal-up').classList.add('active');
+        }
+        function salvarUP() {
+            const n = document.getElementById('cad-up-nome').value.trim();
+            const v = parseFloat(document.getElementById('cad-up-vmi').value);
+            const a = parseFloat(document.getElementById('cad-up-arvha').value);
+            const area = parseFloat(document.getElementById('cad-up-area').value);
+            if(!n || isNaN(v) || isNaN(a) || isNaN(area)) return alert("Preencha tudo corretamente.");
+
+            if(upEditId) {
+                const u = db.ups.find(x => x.id === upEditId);
+                if(u) { u.nome = n; u.vmi = v; u.arvHa = a; u.area = area; }
+                saveData(); closeModal('modal-up'); renderUPs();
+                if(upSelecionadaParaBlocos && upSelecionadaParaBlocos.id === upEditId) abrirUPDetail(upEditId);
+                alert("UP atualizada!");
+            } else {
+                db.ups.push({ id: Date.now().toString(), nome: n, vmi: v, arvHa: a, area: area });
+                saveData(); closeModal('modal-up'); renderUPs();
+                alert("UP salva!");
+            }
+            upEditId = null;
+        }
+        function excluirUP(id) {
+            if(!requireAuth()) return;
+            const u = db.ups.find(x => x.id === id);
+            if(!u) return;
+            const temBlocos = db.blocos.some(b => b.idUP === id);
+            if(temBlocos) return alert("Não é possível excluir a UP " + u.nome + " porque ela possui blocos cadastrados. Exclua os blocos primeiro.");
+            if(!confirm("Deseja realmente excluir a UP " + u.nome + "?")) return;
+            db.ups = db.ups.filter(x => x.id !== id);
+            saveData(); renderUPs();
+        }
+
+        function renderUPs(filtro = '') {
+            const tb = document.getElementById('tb-ups'); tb.innerHTML = '';
+            let lista = db.ups;
+            if(filtro) {
+                const f = filtro.toLowerCase();
+                lista = db.ups.filter(u => u.nome.toLowerCase().includes(f) || db.blocos.some(b => b.idUP === u.id && b.nome.toLowerCase().includes(f)));
+            }
+
+            if(lista.length === 0) {
+                tb.innerHTML = `<tr><td colspan="7" style="text-align:center; color:var(--text-muted);">Nenhuma UP encontrada.</td></tr>`;
+                return;
+            }
+
+            lista.forEach(u => {
+                const calc = calcUP(u);
+                const qtdBlocos = db.blocos.filter(b => b.idUP === u.id).length;
+                const tr = document.createElement('tr');
+                tr.classList.add('clickable-row');
+                tr.onclick = () => abrirUPDetail(u.id);
+                tr.innerHTML = `
+                    <td><b>${u.nome}</b></td><td>${u.vmi}</td><td>${u.arvHa}</td><td>${u.area}</td>
+                    <td>${calc.arvTotais.toFixed(0)}</td><td>${calc.m3Totais.toFixed(2)}</td>
+                    <td class="row-actions" onclick="event.stopPropagation();">
+                        <button class="btn btn-primary btn-sm" onclick="abrirUPDetail('${u.id}')">Ver (${qtdBlocos})</button>
+                        <button class="btn back-btn btn-sm" onclick="abrirModalUP('${u.id}')">Editar</button>
+                        <button class="btn btn-danger btn-sm" onclick="excluirUP('${u.id}')">Excluir</button>
+                    </td>
+                `;
+                tb.appendChild(tr);
+            });
+        }
+
+        function filtrarUPsBlocos() {
+            const termo = document.getElementById('input-busca-geral').value.trim();
+            renderUPs(termo);
+        }
+
+        function abrirUPDetail(idUP) {
+            upSelecionadaParaBlocos = db.ups.find(u => u.id === idUP);
+            if(!upSelecionadaParaBlocos) return;
+
+            const calc = calcUP(upSelecionadaParaBlocos);
+            document.getElementById('upd-title').innerText = 'UP ' + upSelecionadaParaBlocos.nome;
+            document.getElementById('upd-vmi').innerText = upSelecionadaParaBlocos.vmi;
+            document.getElementById('upd-arvha').innerText = upSelecionadaParaBlocos.arvHa;
+            document.getElementById('upd-area').innerText = upSelecionadaParaBlocos.area;
+            document.getElementById('upd-m3total').innerText = calc.m3Totais.toFixed(2);
+
+            renderBlocos();
+            renderHistoricoUP();
+            showView('up-detail');
+        }
+
+        // ---------- CRUD de Blocos ----------
+        function abrirModalBloco(id = null) {
+            if(!requireAuth()) return;
+            if(!upSelecionadaParaBlocos) return alert("Selecione uma UP primeiro.");
+            blocoEditId = id;
+            const b = id ? db.blocos.find(x => x.id === id) : null;
+            document.getElementById('cad-bloco-nome').value = b ? b.nome : '';
+            document.getElementById('cad-bloco-area').value = b ? b.area : '';
+            document.getElementById('cad-bloco-status').value = b ? b.status : 'Colhendo';
+            document.getElementById('modal-bloco-titulo').innerText = b ? 'Editar Bloco' : 'Cadastrar Bloco na UP';
+            document.getElementById('modal-bloco').classList.add('active');
+        }
+        function salvarBloco() {
+            const n = document.getElementById('cad-bloco-nome').value.trim();
+            const a = parseFloat(document.getElementById('cad-bloco-area').value);
+            const status = document.getElementById('cad-bloco-status').value;
+            if(!n || isNaN(a)) return alert("Preencha os campos.");
+
+            if(blocoEditId) {
+                const b = db.blocos.find(x => x.id === blocoEditId);
+                if(b) { b.nome = n; b.area = a; b.status = status; }
+                saveData(); closeModal('modal-bloco'); renderBlocos(); renderUPs();
+                alert("Bloco atualizado!");
+            } else {
+                db.blocos.push({ id: Date.now().toString(), idUP: upSelecionadaParaBlocos.id, nome: n, area: a, status: status || 'Colhendo' });
+                saveData(); closeModal('modal-bloco'); renderBlocos(); renderUPs();
+                alert("Bloco salvo na UP " + upSelecionadaParaBlocos.nome + "!");
+            }
+            blocoEditId = null;
+        }
+        function excluirBloco(id) {
+            if(!requireAuth()) return;
+            const b = db.blocos.find(x => x.id === id);
+            if(!b) return;
+            const qtdLanc = db.lancamentos.filter(l => l.idBloco === id).length;
+            let msg = `Deseja realmente excluir o bloco ${b.nome}?`;
+            if(qtdLanc > 0) msg += ` Isso também removerá ${qtdLanc} lançamento(s) vinculados a ele.`;
+            if(!confirm(msg)) return;
+            db.blocos = db.blocos.filter(x => x.id !== id);
+            db.lancamentos = db.lancamentos.filter(l => l.idBloco !== id);
+            saveData();
+            renderBlocos(); renderUPs(); renderMaquinas();
+            renderHistoricoUP();
+            if(blocoSelecionado && blocoSelecionado.id === id) { blocoSelecionado = null; showView('up-detail'); }
+        }
+        function finalizarBlocoPorId(id) {
+            if(!requireAuth()) return;
+            const b = db.blocos.find(x => x.id === id);
+            if(!b) return;
+            if(b.status === 'Fechado') return alert('Esse bloco já está fechado.');
+            if(!confirm('Deseja realmente FECHAR o bloco ' + b.nome + '?')) return;
+            b.status = 'Fechado';
+            saveData();
+            renderBlocos(); renderUPs();
+            renderBlocoDetail();
+            atualizarDashboard();
+        }
+        function finalizarBlocoAtualDetail() {
+            if(!blocoSelecionado) return;
+            finalizarBlocoPorId(blocoSelecionado.id);
+        }
+
+        function renderBlocos() {
+            const tb = document.getElementById('tb-blocos'); tb.innerHTML = '';
+            if(!upSelecionadaParaBlocos) {
+                tb.innerHTML = `<tr><td colspan="7" style="text-align:center; color:var(--text-muted);">Nenhuma UP selecionada no momento.</td></tr>`;
+                return;
+            }
+            const blocos = db.blocos.filter(b => b.idUP === upSelecionadaParaBlocos.id);
+            if(blocos.length === 0) {
+                tb.innerHTML = `<tr><td colspan="7" style="text-align:center; color:var(--text-muted);">Nenhum bloco cadastrado nesta UP ainda.</td></tr>`;
+                return;
+            }
+            blocos.forEach(b => {
+                const c = calcBloco(b);
+                const isNeg = c.saldoArv < 0;
+                const tr = document.createElement('tr');
+                tr.classList.add('clickable-row');
+                tr.onclick = () => abrirBlocoDetail(b.id);
+                tr.innerHTML = `
+                    <td>${b.nome}</td>
+                    <td><span class="badge" style="background:${b.status==='Fechado'?'var(--danger)':'var(--primary)'};">${b.status}</span></td>
+                    <td>${b.area}</td>
+                    <td>${c.planArv.toFixed(0)} / ${c.planM3.toFixed(2)}</td>
+                    <td>${c.realizArv.toFixed(0)} / ${c.realizM3.toFixed(2)}</td>
+                    <td class="${isNeg ? 'negative-text' : ''}">${c.saldoArv.toFixed(0)} / ${c.saldoM3.toFixed(2)}</td>
+                    <td class="row-actions" onclick="event.stopPropagation();">
+                        <button class="btn back-btn btn-sm" onclick="abrirModalBloco('${b.id}')">Editar</button>
+                        <button class="btn btn-danger btn-sm" onclick="excluirBloco('${b.id}')">Excluir</button>
+                    </td>
+                `;
+                tb.appendChild(tr);
+            });
+        }
+
+        function renderHistoricoUP() {
+            const tb = document.getElementById('tb-hist-up'); tb.innerHTML = '';
+            if(!upSelecionadaParaBlocos) return;
+
+            const lancs = db.lancamentos.filter(l => l.idUP === upSelecionadaParaBlocos.id).sort((a,b) => new Date(b.data) - new Date(a.data));
+            if(lancs.length === 0) {
+                tb.innerHTML = `<tr><td colspan="6" style="text-align:center; color:var(--text-muted);">Nenhum lançamento nesta UP ainda.</td></tr>`;
+                return;
+            }
+            lancs.forEach(l => {
+                const b = db.blocos.find(x => x.id === l.idBloco);
+                const m = db.maquinas.find(x => x.id === l.idMaquina);
+                const d = new Date(l.data).toLocaleDateString();
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td>${d}</td><td>${b ? b.nome : '-'}</td><td>${m ? m.nome : '-'}</td><td>${l.arvores}</td><td>${l.m3.toFixed(2)}</td>
+                    <td class="row-actions">
+                        <button class="btn back-btn btn-sm" onclick="abrirModalEditarLancamento('${l.id}')">Editar</button>
+                        <button class="btn btn-danger btn-sm" onclick="excluirLancamento('${l.id}')">Excluir</button>
+                    </td>`;
+                tb.appendChild(tr);
+            });
+        }
+
+        function abrirBlocoDetail(idBloco) {
+            const b = db.blocos.find(x => x.id === idBloco);
+            if(!b) return;
+            blocoSelecionado = b;
+            renderBlocoDetail();
+            showView('bloco-detail');
+        }
+        function renderBlocoDetail() {
+            if(!blocoSelecionado) return;
+            const atual = db.blocos.find(b => b.id === blocoSelecionado.id);
+            if(!atual) return;
+            blocoSelecionado = atual;
+
+            const c = calcBloco(blocoSelecionado);
+            document.getElementById('bd-title').innerText = 'Bloco ' + blocoSelecionado.nome + ' (UP ' + c.up.nome + ')';
+            document.getElementById('bd-status').innerText = blocoSelecionado.status;
+            document.getElementById('bd-area').innerText = blocoSelecionado.area;
+            document.getElementById('bd-plan').innerText = c.planArv.toFixed(0) + ' árv / ' + c.planM3.toFixed(2) + ' m³';
+            document.getElementById('bd-realiz').innerText = c.realizArv.toFixed(0) + ' árv / ' + c.realizM3.toFixed(2) + ' m³';
+
+            const saldoEl = document.getElementById('bd-saldo');
+            saldoEl.innerText = c.saldoM3.toFixed(2) + ' m³';
+            saldoEl.className = c.saldoM3 < 0 ? 'negative-text' : '';
+            document.getElementById('bd-pct').innerText = ' (' + c.perColhido.toFixed(1) + '% colhido)';
+
+            const bar = document.getElementById('bd-bar');
+            bar.style.width = Math.min(c.perColhido, 100) + '%';
+            if(c.perColhido >= 100) bar.classList.add('over'); else bar.classList.remove('over');
+
+            const tb = document.getElementById('tb-lanc-bloco'); tb.innerHTML = '';
+            const lancs = db.lancamentos.filter(l => l.idBloco === blocoSelecionado.id).sort((a,b) => new Date(b.data) - new Date(a.data));
+            if(lancs.length === 0) {
+                tb.innerHTML = `<tr><td colspan="5" style="text-align:center; color:var(--text-muted);">Nenhum lançamento neste bloco ainda.</td></tr>`;
+            } else {
+                lancs.forEach(l => {
+                    const m = db.maquinas.find(x => x.id === l.idMaquina);
+                    const d = new Date(l.data).toLocaleDateString();
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `<td>${d}</td><td>${m ? m.nome : '-'}</td><td>${l.arvores}</td><td>${l.m3.toFixed(2)}</td>
+                        <td class="row-actions">
+                            <button class="btn back-btn btn-sm" onclick="abrirModalEditarLancamento('${l.id}')">Editar</button>
+                            <button class="btn btn-danger btn-sm" onclick="excluirLancamento('${l.id}')">Excluir</button>
+                        </td>`;
+                    tb.appendChild(tr);
+                });
+            }
+        }
+        function voltarParaUPDetail() {
+            if(upSelecionadaParaBlocos) { abrirUPDetail(upSelecionadaParaBlocos.id); }
+            else { showView('ups'); }
+        }
+
+        // ---------- CRUD de Máquinas ----------
+        function abrirModalMaquina(id = null) {
+            if(!requireAuth()) return;
+            maquinaEditId = id;
+            const m = id ? db.maquinas.find(x => x.id === id) : null;
+            document.getElementById('cad-maq-nome').value = m ? m.nome : '';
+            document.getElementById('modal-maquina-titulo').innerText = m ? 'Editar Máquina' : 'Cadastrar Máquina';
+            document.getElementById('modal-maquina').classList.add('active');
+        }
+        function salvarMaquina() {
+            const n = document.getElementById('cad-maq-nome').value.trim().toUpperCase();
+            if(!n) return alert("Informe o prefixo/nome da máquina.");
+            const existente = db.maquinas.find(m => m.nome === n && m.id !== maquinaEditId);
+            if(existente) return alert("Já existe uma máquina com esse nome.");
+
+            if(maquinaEditId) {
+                const m = db.maquinas.find(x => x.id === maquinaEditId);
+                if(m) m.nome = n;
+            } else {
+                db.maquinas.push({ id: Date.now().toString(), nome: n, status: 'Ativa', blocoAtualId: null });
+            }
+            saveData(); closeModal('modal-maquina'); renderMaquinas();
+            maquinaEditId = null;
+        }
+        function excluirMaquina(id) {
+            if(!requireAuth()) return;
+            const m = db.maquinas.find(x => x.id === id);
+            if(!m) return;
+            const qtdLanc = db.lancamentos.filter(l => l.idMaquina === id).length;
+            let msg = `Deseja realmente excluir a máquina ${m.nome}?`;
+            if(qtdLanc > 0) msg += ` Ela possui ${qtdLanc} apontamento(s) no histórico, que ficarão sem máquina vinculada. Se preferir manter o histórico, use "Inativar" em vez de excluir.`;
+            if(!confirm(msg)) return;
+            db.maquinas = db.maquinas.filter(x => x.id !== id);
+            saveData(); renderMaquinas();
+        }
+        function alternarStatusMaquina(id) {
+            if(!requireAuth()) return;
+            const m = db.maquinas.find(x => x.id === id);
+            if(!m) return;
+            const novoStatus = m.status === 'Inativa' ? 'Ativa' : 'Inativa';
+            if(!confirm(`Deseja marcar a máquina ${m.nome} como ${novoStatus}?`)) return;
+            m.status = novoStatus;
+            saveData(); renderMaquinas();
+        }
+        function abrirModalTrocarBloco(idMaquina) {
+            if(!requireAuth()) return;
+            trocaMaquinaId = idMaquina;
+            const m = db.maquinas.find(x => x.id === idMaquina);
+            if(!m) return;
+            document.getElementById('troca-maquina-nome').innerText = m.nome;
+            const ativos = db.blocos.filter(b => b.status === 'Colhendo');
+            const sel = document.getElementById('troca-bloco-select');
+            sel.innerHTML = '<option value="">— Nenhum —</option>' + ativos.map(b => {
+                const up = db.ups.find(u => u.id === b.idUP);
+                return `<option value="${b.id}">${up ? up.nome : '-'} - Bloco ${b.nome}</option>`;
+            }).join('');
+            sel.value = m.blocoAtualId || '';
+            document.getElementById('modal-trocar-bloco').classList.add('active');
+        }
+        function salvarTrocaBloco() {
+            const m = db.maquinas.find(x => x.id === trocaMaquinaId);
+            if(!m) return;
+            const idBloco = document.getElementById('troca-bloco-select').value;
+            m.blocoAtualId = idBloco || null;
+            saveData(); closeModal('modal-trocar-bloco'); renderMaquinas();
+            trocaMaquinaId = null;
+        }
+
+        function renderMaquinas() {
+            const tb = document.getElementById('tb-maquinas'); tb.innerHTML = '';
+            if(db.maquinas.length === 0) {
+                tb.innerHTML = `<tr><td colspan="6" style="text-align:center; color:var(--text-muted);">Nenhuma máquina cadastrada.</td></tr>`;
+                return;
+            }
+            db.maquinas.forEach(m => {
+                const lancs = db.lancamentos.filter(l => l.idMaquina === m.id);
+                const totArv = lancs.reduce((s, l) => s + l.arvores, 0);
+                const totM3 = lancs.reduce((s, l) => s + l.m3, 0);
+                const blocoAtual = getBlocoAtualDaMaquina(m.id);
+                const upAtual = blocoAtual ? db.ups.find(u => u.id === blocoAtual.idUP) : null;
+                const inativa = m.status === 'Inativa';
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><b>${m.nome}</b></td>
+                    <td><span class="badge" style="background:${inativa ? 'var(--text-muted)' : 'var(--primary)'};">${m.status}</span></td>
+                    <td>${blocoAtual ? `Bloco ${blocoAtual.nome} <span style="color:var(--text-muted); font-size:0.8rem;">(UP ${upAtual ? upAtual.nome : '-'})</span>` : '<span style="color:var(--text-muted);">-</span>'}</td>
+                    <td>${totArv.toFixed(0)}</td><td>${totM3.toFixed(2)}</td>
+                    <td class="row-actions">
+                        <button class="btn back-btn btn-sm" onclick="abrirHistMaquinaView('${m.id}')">Histórico</button>
+                        <button class="btn back-btn btn-sm" onclick="abrirModalTrocarBloco('${m.id}')">Trocar Bloco</button>
+                        <button class="btn back-btn btn-sm" onclick="abrirModalMaquina('${m.id}')">Editar</button>
+                        <button class="btn back-btn btn-sm" onclick="alternarStatusMaquina('${m.id}')">${inativa ? 'Reativar' : 'Inativar'}</button>
+                        <button class="btn btn-danger btn-sm" onclick="excluirMaquina('${m.id}')">Excluir</button>
+                    </td>
+                `;
+                tb.appendChild(tr);
+            });
+        }
+
+        function abrirHistMaquinaView(idMaq) {
+            maquinaSelecionada = idMaq;
+            renderHistMaquina();
+            showView('hist-maquina');
+        }
+        function renderHistMaquina() {
+            if(!maquinaSelecionada) return;
+            const m = db.maquinas.find(x => x.id === maquinaSelecionada);
+            if(!m) return;
+            document.getElementById('hist-maq-title-view').innerText = 'Histórico da Máquina: ' + m.nome;
+            const tb = document.getElementById('tb-hist-maquina-view'); tb.innerHTML = '';
+
+            const lancs = db.lancamentos.filter(l => l.idMaquina === maquinaSelecionada).sort((a,b) => new Date(b.data) - new Date(a.data));
+            if(lancs.length === 0) {
+                tb.innerHTML = `<tr><td colspan="7" style="text-align:center; color:var(--text-muted);">Nenhum apontamento registrado para esta máquina.</td></tr>`;
+            } else {
+                lancs.forEach(l => {
+                    const b = db.blocos.find(x => x.id === l.idBloco);
+                    const u = db.ups.find(x => x.id === l.idUP);
+                    if(!b || !u) return;
+
+                    const c = calcBloco(b);
+                    const pctParticipacao = c.realizArv > 0 ? (l.arvores / c.realizArv) : 0;
+                    const saldoM3Resp = c.saldoM3 * pctParticipacao;
+                    const respText = saldoM3Resp < 0 ? `<span class="negative-text">${saldoM3Resp.toFixed(2)} m³</span>` : `+${saldoM3Resp.toFixed(2)} m³`;
+
+                    const d = new Date(l.data).toLocaleDateString();
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `<td>${d}</td><td>${u.nome}</td><td>${b.nome}</td><td>${l.arvores}</td><td>${l.m3.toFixed(2)}</td><td>${respText}</td>
+                        <td class="row-actions">
+                            <button class="btn back-btn btn-sm" onclick="abrirModalEditarLancamento('${l.id}')">Editar</button>
+                            <button class="btn btn-danger btn-sm" onclick="excluirLancamento('${l.id}')">Excluir</button>
+                        </td>`;
+                    tb.appendChild(tr);
+                });
+            }
+        }
+
+        // ---------- Autocomplete próprio para Máquina e Bloco no Lançamento ----------
+        // (mais confiável em celular do que <datalist>, que costuma fechar a lista de sugestões
+        //  no meio da seleção quando as opções são atualizadas a cada tecla digitada)
+
+        function mostrarSugestoesMaquina(valor) {
+            const box = document.getElementById('sugestoes-maquina');
+            const filtro = (valor || '').trim().toUpperCase();
+            const ativas = db.maquinas.filter(m => m.status !== 'Inativa');
+            const itens = filtro ? ativas.filter(m => m.nome.includes(filtro)) : ativas;
+
+            if(ativas.length === 0) {
+                box.innerHTML = `<div class="autocomplete-empty">Nenhuma máquina ativa cadastrada. Cadastre em "Máquinas" no menu.</div>`;
+            } else if(itens.length === 0) {
+                box.innerHTML = `<div class="autocomplete-empty">Nenhuma máquina encontrada para "${valor}".</div>`;
+            } else {
+                box.innerHTML = itens.map(m => `<div class="autocomplete-item" onclick="selecionarMaquina('${m.id}')">${m.nome}</div>`).join('');
+            }
+            box.classList.add('active');
+
+            const exata = ativas.find(m => m.nome === filtro);
+            if(exata) mostrarDicaBlocoMaquina(exata.id); else esconderDicaBlocoMaquina();
+        }
+        function selecionarMaquina(id) {
+            const m = db.maquinas.find(x => x.id === id);
+            if(!m) return;
+            document.getElementById('lan-maquina').value = m.nome;
+            document.getElementById('sugestoes-maquina').classList.remove('active');
+            mostrarDicaBlocoMaquina(id);
+        }
+        function mostrarDicaBlocoMaquina(idMaquina) {
+            const hint = document.getElementById('lan-maquina-hint');
+            const blocoAtual = getBlocoAtualDaMaquina(idMaquina);
+            if(!blocoAtual) { hint.style.display = 'none'; hint.innerHTML = ''; return; }
+            const up = db.ups.find(u => u.id === blocoAtual.idUP);
+            hint.style.display = 'block';
+            hint.innerHTML = `Essa máquina está atualmente no <b>Bloco ${blocoAtual.nome}</b> (UP ${up ? up.nome : '-'}). <span style="text-decoration:underline; cursor:pointer; color:var(--primary); font-weight:600;" onclick="usarBlocoSugerido('${blocoAtual.id}')">Usar este bloco</span>`;
+        }
+        function esconderDicaBlocoMaquina() {
+            const hint = document.getElementById('lan-maquina-hint');
+            if(hint) { hint.style.display = 'none'; hint.innerHTML = ''; }
+        }
+        function usarBlocoSugerido(idBloco) {
+            const b = db.blocos.find(x => x.id === idBloco);
+            if(!b) return;
+            document.getElementById('lan-bloco').value = b.nome;
+            processarBlocoLancamento();
+        }
+
+        function mostrarSugestoesBloco(valor) {
+            const box = document.getElementById('sugestoes-bloco');
+            const filtro = (valor || '').trim().toUpperCase();
+            const ativos = db.blocos.filter(b => b.status === 'Colhendo');
+            const itens = filtro ? ativos.filter(b => b.nome.toUpperCase().includes(filtro)) : ativos;
+
+            if(ativos.length === 0) {
+                box.innerHTML = `<div class="autocomplete-empty">Nenhum bloco ativo. Cadastre um bloco na aba "Gestão UP/Bloco".</div>`;
+            } else if(itens.length === 0) {
+                box.innerHTML = `<div class="autocomplete-empty">Nenhum bloco ativo encontrado para "${valor}".</div>`;
+            } else {
+                box.innerHTML = itens.map(b => {
+                    const up = db.ups.find(u => u.id === b.idUP);
+                    return `<div class="autocomplete-item" onclick="selecionarBloco('${b.id}')">Bloco ${b.nome} <span style="color:var(--text-muted); font-size:0.8rem;">(UP ${up ? up.nome : '-'})</span></div>`;
+                }).join('');
+            }
+            box.classList.add('active');
+            processarBlocoLancamento();
+        }
+        function selecionarBloco(id) {
+            const b = db.blocos.find(x => x.id === id);
+            if(!b) return;
+            document.getElementById('lan-bloco').value = b.nome;
+            document.getElementById('sugestoes-bloco').classList.remove('active');
+            processarBlocoLancamento();
+        }
+
+        document.addEventListener('click', function(e) {
+            if(!e.target.closest('.autocomplete-wrapper')) {
+                document.querySelectorAll('.autocomplete-list').forEach(l => l.classList.remove('active'));
+            }
+        });
+
+        function processarBlocoLancamento() {
+            const blNome = document.getElementById('lan-bloco').value.trim();
+            const bloco = db.blocos.find(b => b.nome.toUpperCase() === blNome.toUpperCase() && b.status === 'Colhendo');
+
+            if(bloco) {
+                const up = db.ups.find(u => u.id === bloco.idUP);
+                if(up) {
+                    document.getElementById('lan-up-detectada').value = up.nome;
+                    const c = calcBloco(bloco);
+                    document.getElementById('lan-bloco-info').style.display = 'block';
+                    document.getElementById('lan-info-vmi').innerText = up.vmi;
+                    document.getElementById('lan-info-plan-arv').innerText = c.planArv.toFixed(0);
+                    document.getElementById('lan-info-plan-m3').innerText = c.planM3.toFixed(2);
+
+                    const rArv = document.getElementById('lan-info-rest-arv');
+                    const rM3 = document.getElementById('lan-info-rest-m3');
+                    rArv.innerText = c.saldoArv.toFixed(0);
+                    rM3.innerText = c.saldoM3.toFixed(2);
+                    rArv.className = c.saldoArv < 0 ? 'negative-text' : '';
+                    rM3.className = c.saldoM3 < 0 ? 'negative-text' : '';
+
+                    const bar = document.getElementById('lan-info-bar');
+                    bar.style.width = Math.min(c.perColhido, 100) + '%';
+                    if(c.perColhido >= 100) bar.classList.add('over'); else bar.classList.remove('over');
+                }
+            } else {
+                document.getElementById('lan-up-detectada').value = '';
+                document.getElementById('lan-bloco-info').style.display = 'none';
+            }
+        }
+
+        // ---------- CRUD de Lançamentos ----------
+        function salvarLancamento() {
+            if(!requireAuth()) return;
+            const mNome = document.getElementById('lan-maquina').value.trim().toUpperCase();
+            const bNome = document.getElementById('lan-bloco').value.trim();
+            const arv = parseInt(document.getElementById('lan-arvores').value);
+
+            const maq = db.maquinas.find(m => m.nome === mNome);
+            if(!maq) return alert("Máquina não encontrada. Cadastre-a primeiro em 'Máquinas'.");
+            if(maq.status === 'Inativa') return alert("Essa máquina está Inativa. Reative-a em 'Máquinas' para lançar apontamentos.");
+
+            const bloco = db.blocos.find(b => b.nome.toUpperCase() === bNome.toUpperCase() && b.status === 'Colhendo');
+            if(!bloco) return alert("Bloco não encontrado ou já fechado.");
+
+            const up = db.ups.find(u => u.id === bloco.idUP);
+            if(!up) return alert("UP associada não encontrada.");
+
+            if(isNaN(arv) || arv <= 0) return alert("Informe uma quantidade de árvores válida.");
+
+            const m3 = arv * up.vmi;
+
+            db.lancamentos.push({
+                id: Date.now().toString(), idMaquina: maq.id, idUP: up.id, idBloco: bloco.id,
+                data: new Date().toISOString(), arvores: arv, m3: m3, userId: currentUser
+            });
+            maq.blocoAtualId = bloco.id;
+            saveData();
+
+            document.getElementById('lan-arvores').value = '';
+            document.getElementById('lan-bloco').value = '';
+            document.getElementById('lan-up-detectada').value = '';
+            document.getElementById('lan-bloco-info').style.display = 'none';
+            esconderDicaBlocoMaquina();
+
+            atualizarViewsAposLancamento();
+            alert("Lançamento salvo com sucesso! [ID: " + currentUser + "]");
+        }
+
+        function abrirModalEditarLancamento(id) {
+            if(!requireAuth()) return;
+            const l = db.lancamentos.find(x => x.id === id);
+            if(!l) return;
+            lancamentoEditId = id;
+
+            document.getElementById('edit-lanc-maquina').innerHTML = db.maquinas.map(m =>
+                `<option value="${m.id}" ${m.id === l.idMaquina ? 'selected' : ''}>${m.nome}${m.status === 'Inativa' ? ' (inativa)' : ''}</option>`
+            ).join('');
+            document.getElementById('edit-lanc-bloco').innerHTML = db.blocos.map(b => {
+                const up = db.ups.find(u => u.id === b.idUP);
+                return `<option value="${b.id}" ${b.id === l.idBloco ? 'selected' : ''}>${up ? up.nome : '-'} - Bloco ${b.nome} (${b.status})</option>`;
+            }).join('');
+            document.getElementById('edit-lanc-data').value = new Date(l.data).toISOString().slice(0, 10);
+            document.getElementById('edit-lanc-arvores').value = l.arvores;
+            document.getElementById('modal-lancamento').classList.add('active');
+        }
+        function salvarEdicaoLancamento() {
+            const l = db.lancamentos.find(x => x.id === lancamentoEditId);
+            if(!l) return;
+            const idMaquina = document.getElementById('edit-lanc-maquina').value;
+            const idBloco = document.getElementById('edit-lanc-bloco').value;
+            const novaData = document.getElementById('edit-lanc-data').value;
+            const novasArv = parseInt(document.getElementById('edit-lanc-arvores').value);
+
+            if(!idMaquina || !idBloco || !novaData || isNaN(novasArv) || novasArv <= 0) return alert("Preencha os dados corretamente.");
+
+            const bloco = db.blocos.find(x => x.id === idBloco);
+            if(!bloco) return alert("Bloco inválido.");
+            const up = db.ups.find(u => u.id === bloco.idUP);
+            if(!up) return alert("UP do bloco não encontrada.");
+
+            const [ano, mes, dia] = novaData.split('-').map(Number);
+            const novaDataObj = new Date(ano, mes - 1, dia, 12, 0, 0);
+
+            l.idMaquina = idMaquina;
+            l.idBloco = idBloco;
+            l.idUP = up.id;
+            l.data = novaDataObj.toISOString();
+            l.arvores = novasArv;
+            l.m3 = novasArv * up.vmi;
+
+            saveData();
+            closeModal('modal-lancamento');
+            atualizarViewsAposLancamento();
+            lancamentoEditId = null;
+            alert("Apontamento atualizado com sucesso!");
+        }
+        function excluirLancamento(id) {
+            if(!requireAuth()) return;
+            if(!confirm("Deseja realmente excluir este apontamento? Essa ação não pode ser desfeita.")) return;
+            db.lancamentos = db.lancamentos.filter(x => x.id !== id);
+            saveData();
+            atualizarViewsAposLancamento();
+        }
+        // Atualiza todas as telas que podem ter dados de lançamento, sem forçar navegação
+        function atualizarViewsAposLancamento() {
+            renderMaquinas(); renderBlocos(); renderUPs();
+            renderHistoricoUP();
+            renderBlocoDetail();
+            renderHistMaquina();
+            if(estaNaView('dashboard')) atualizarDashboard();
+        }
+
+        function finalizarBlocoAtual() {
+            if(!requireAuth()) return;
+            const bNome = document.getElementById('lan-bloco').value.trim();
+            const bloco = db.blocos.find(b => b.nome.toUpperCase() === bNome.toUpperCase() && b.status === 'Colhendo');
+            if(bloco) {
+                if(confirm("Deseja realmente FECHAR o bloco " + bloco.nome + "?")) {
+                    bloco.status = 'Fechado';
+                    saveData();
+                    document.getElementById('lan-bloco').value = '';
+                    document.getElementById('lan-up-detectada').value = '';
+                    document.getElementById('lan-bloco-info').style.display = 'none';
+                    renderBlocos(); renderUPs();
+                    alert("Bloco Fechado com sucesso!");
+                }
+            } else {
+                alert("Selecione um bloco ativo válido para fechar.");
+            }
+        }
+
+        // ---------- Dashboard ----------
+        function atualizarDashboard() {
+            const hoje = new Date().toLocaleDateString();
+            const lancHj = db.lancamentos.filter(l => new Date(l.data).toLocaleDateString() === hoje);
+            const arvHj = lancHj.reduce((s,l)=>s+l.arvores, 0);
+            const m3Hj = lancHj.reduce((s,l)=>s+l.m3, 0);
+
+            document.getElementById('dash-arv-diaria').innerText = arvHj;
+            document.getElementById('dash-m3-diaria').innerText = m3Hj.toFixed(2);
+
+            const arvTot = db.lancamentos.reduce((s,l)=>s+l.arvores, 0);
+            const m3Tot = db.lancamentos.reduce((s,l)=>s+l.m3, 0);
+            document.getElementById('dash-m3-total').innerText = m3Tot.toFixed(2);
+
+            // Agrupa por dia (chave AAAA-MM-DD) para poder ordenar cronologicamente de verdade
+            const porDia = {};
+            db.lancamentos.forEach(l => {
+                const d = new Date(l.data);
+                const chave = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+                if(!porDia[chave]) porDia[chave] = { label: d.toLocaleDateString(), m3: 0 };
+                porDia[chave].m3 += l.m3;
+            });
+            const chavesOrdenadas = Object.keys(porDia).sort();
+            const mediaM3 = chavesOrdenadas.length > 0 ? (m3Tot / chavesOrdenadas.length) : 0;
+            document.getElementById('dash-media-diaria').innerText = mediaM3.toFixed(2);
+
+            const bAtivos = db.blocos.filter(b => b.status === 'Colhendo');
+            const boxBAtivos = document.getElementById('dash-blocos-ativos');
+            if(bAtivos.length > 0) {
+                boxBAtivos.innerHTML = bAtivos.map(b => {
+                    const c = calcBloco(b);
+                    const isNeg = c.saldoM3 < 0;
+                    return `
+                        <div style="padding:12px; border:1px solid var(--border); margin-bottom:10px; border-radius:8px;">
+                            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+                                <strong style="cursor:pointer; color:var(--primary);" onclick="abrirUPDetail('${c.up.id}')">${c.up.nome} - Bloco ${b.nome}</strong>
+                                <button class="btn btn-danger btn-sm" onclick="finalizarBlocoPorId('${b.id}')">Finalizar</button>
+                            </div>
+                            <span style="font-size:0.8rem;">Colhido: ${c.perColhido.toFixed(1)}% | Saldo: <span class="${isNeg?'negative-text':''}">${c.saldoM3.toFixed(2)} m³</span></span>
+                            <div class="progress-container"><div class="progress-bar ${c.perColhido>=100?'over':''}" style="width:${Math.min(c.perColhido,100)}%;"></div></div>
+                        </div>
+                    `;
+                }).join('');
+            } else { boxBAtivos.innerHTML = "Nenhum bloco ativo no momento."; }
+
+            const mqMap = {};
+            db.maquinas.forEach(m => mqMap[m.id] = {nome: m.nome, m3: 0});
+            db.lancamentos.forEach(l => { if(mqMap[l.idMaquina]) mqMap[l.idMaquina].m3 += l.m3; });
+            const ranking = Object.values(mqMap).sort((a,b)=>b.m3 - a.m3);
+            document.getElementById('dash-ranking').innerHTML = ranking.length ? ranking.slice(0,5).map((r,i) => `
+                <div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--border);">
+                    <span>${i+1}º ${r.nome}</span><strong>${r.m3.toFixed(2)}</strong>
+                </div>
+            `).join('') : '<p style="color:var(--text-muted); font-size:0.9rem;">Nenhuma máquina com produção ainda.</p>';
+
+            if(myChart) myChart.destroy();
+            const ctx = document.getElementById('chartGeral').getContext('2d');
+            const ultimasChaves = chavesOrdenadas.slice(-7);
+            const ultimosDias = ultimasChaves.map(k => porDia[k].label);
+            const dadosGraf = ultimasChaves.map(k => porDia[k].m3);
+
+            myChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ultimosDias.length ? ultimosDias : ['Hoje'],
+                    datasets: [{
+                        label: 'Produção M³ Diária',
+                        data: dadosGraf.length ? dadosGraf : [0],
+                        borderColor: '#2e8b57', backgroundColor: 'rgba(46, 139, 87, 0.2)',
+                        fill: true, tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: { y: { beginAtZero: true } }
+                }
+            });
+
+            renderLunaInsights(bAtivos, ranking, chavesOrdenadas.length);
+        }
+
+        function renderLunaInsights(bAtivos, ranking, totalDias) {
+            let msg = "Tudo tranquilo por enquanto, parceiro! O mato tá rendendo.";
+            let alertas = [];
+
+            const bEstourados = bAtivos.filter(b => calcBloco(b).saldoArv < 0);
+            const bQuase = bAtivos.filter(b => { const c = calcBloco(b); return c.perColhido >= 90 && c.perColhido < 100; });
+
+            if(bAtivos.length > 0) alertas.push(`Temos <b>${bAtivos.length}</b> bloco(s) em andamento.`);
+            if(bQuase.length > 0) alertas.push(`Atenção: <b>${bQuase.length}</b> bloco(s) estão acima de 90% da capacidade planejada.`);
+            if(bEstourados.length > 0) alertas.push(`<span class="negative-text">CRÍTICO: ${bEstourados.length} bloco(s) estouraram o planejado!</span>`);
+
+            if(alertas.length > 0) msg = alertas.join("<br><br>");
+            document.getElementById('luna-insights').innerHTML = `<h4>Assistente Luna 🌙</h4><p style="font-size:0.9rem; line-height:1.4;">${msg}</p>`;
+        }
+
+        // ---------- Exportação (com planejado x realizado, por Máquina/UP/Bloco) ----------
+        function atualizarFiltrosExportacao() {
+            const tipo = document.getElementById('exp-tipo').value;
+            document.getElementById('exp-filtro-maquina').style.display = tipo === 'maquina' ? 'block' : 'none';
+            document.getElementById('exp-filtro-up').style.display = (tipo === 'up' || tipo === 'bloco') ? 'block' : 'none';
+            document.getElementById('exp-filtro-bloco').style.display = tipo === 'bloco' ? 'block' : 'none';
+
+            if(tipo === 'maquina') {
+                document.getElementById('exp-select-maquina').innerHTML = db.maquinas.map(m => `<option value="${m.id}">${m.nome}</option>`).join('') || '<option value="">Nenhuma máquina cadastrada</option>';
+            }
+            if(tipo === 'up' || tipo === 'bloco') {
+                document.getElementById('exp-select-up').innerHTML = db.ups.map(u => `<option value="${u.id}">${u.nome}</option>`).join('') || '<option value="">Nenhuma UP cadastrada</option>';
+                if(tipo === 'bloco') atualizarSelectBlocoExportacao();
+            }
+            document.getElementById('exp-preview').style.display = 'none';
+        }
+        function atualizarSelectBlocoExportacao() {
+            const idUP = document.getElementById('exp-select-up').value;
+            const blocosDaUP = db.blocos.filter(b => b.idUP === idUP);
+            document.getElementById('exp-select-bloco').innerHTML = blocosDaUP.map(b => `<option value="${b.id}">${b.nome} (${b.status})</option>`).join('') || '<option value="">Nenhum bloco nesta UP</option>';
+        }
+
+        function gerarRelatorio() {
+            const tipo = document.getElementById('exp-tipo').value;
+            let titulo = '', resumo = [], colunas = [], linhas = [];
+
+            if(tipo === 'geral') {
+                titulo = 'Resumo Geral de Lançamentos';
+                const arvTot = db.lancamentos.reduce((s,l)=>s+l.arvores,0);
+                const m3Tot = db.lancamentos.reduce((s,l)=>s+l.m3,0);
+                resumo = [
+                    {label:'Total de Apontamentos', value: db.lancamentos.length},
+                    {label:'Árvores Totais', value: arvTot.toFixed(0)},
+                    {label:'M³ Totais', value: m3Tot.toFixed(2)},
+                ];
+                colunas = ['Data','Máquina','UP','Bloco','Árvores','M³','Inspetor'];
+                linhas = db.lancamentos.slice().sort((a,b)=>new Date(b.data)-new Date(a.data)).map(l => {
+                    const m = db.maquinas.find(x=>x.id===l.idMaquina);
+                    const u = db.ups.find(x=>x.id===l.idUP);
+                    const b = db.blocos.find(x=>x.id===l.idBloco);
+                    return [new Date(l.data).toLocaleDateString(), m?m.nome:'-', u?u.nome:'-', b?b.nome:'-', l.arvores, l.m3.toFixed(2), l.userId||'-'];
+                });
+            } else if(tipo === 'maquina') {
+                const idMaq = document.getElementById('exp-select-maquina').value;
+                const m = db.maquinas.find(x => x.id === idMaq);
+                if(!m) return alert('Selecione uma máquina.');
+                titulo = 'Relatório da Máquina ' + m.nome;
+                const lancs = db.lancamentos.filter(l => l.idMaquina === idMaq);
+                const arvTot = lancs.reduce((s,l)=>s+l.arvores,0);
+                const m3Tot = lancs.reduce((s,l)=>s+l.m3,0);
+                resumo = [
+                    {label:'Apontamentos', value: lancs.length},
+                    {label:'Árvores Realizadas', value: arvTot.toFixed(0)},
+                    {label:'M³ Realizados', value: m3Tot.toFixed(2)},
+                ];
+                const porBloco = {};
+                lancs.forEach(l => {
+                    if(!porBloco[l.idBloco]) porBloco[l.idBloco] = {arv:0, m3:0};
+                    porBloco[l.idBloco].arv += l.arvores;
+                    porBloco[l.idBloco].m3 += l.m3;
+                });
+                colunas = ['UP','Bloco','Planejado do Bloco (Árv/M³)','Realizado pela Máquina (Árv/M³)','% da Máquina no Bloco'];
+                linhas = Object.keys(porBloco).map(idBloco => {
+                    const b = db.blocos.find(x => x.id === idBloco);
+                    if(!b) return null;
+                    const c = calcBloco(b);
+                    const dadosMaq = porBloco[idBloco];
+                    const pct = c.planArv > 0 ? (dadosMaq.arv / c.planArv * 100) : 0;
+                    return [c.up.nome, b.nome, `${c.planArv.toFixed(0)} / ${c.planM3.toFixed(2)}`, `${dadosMaq.arv.toFixed(0)} / ${dadosMaq.m3.toFixed(2)}`, pct.toFixed(1)+'%'];
+                }).filter(Boolean);
+                if(linhas.length === 0) { colunas = ['Aviso']; linhas = [['Esta máquina ainda não tem lançamentos registrados.']]; }
+            } else if(tipo === 'up') {
+                const idUP = document.getElementById('exp-select-up').value;
+                const u = db.ups.find(x => x.id === idUP);
+                if(!u) return alert('Selecione uma UP.');
+                const calc = calcUP(u);
+                titulo = 'Relatório da UP ' + u.nome;
+                const lancsUP = db.lancamentos.filter(l => l.idUP === idUP);
+                const realizArv = lancsUP.reduce((s,l)=>s+l.arvores,0);
+                const realizM3 = lancsUP.reduce((s,l)=>s+l.m3,0);
+                resumo = [
+                    {label:'Área (Ha)', value: u.area},
+                    {label:'Planejado (Árv/M³)', value: `${calc.arvTotais.toFixed(0)} / ${calc.m3Totais.toFixed(2)}`},
+                    {label:'Realizado (Árv/M³)', value: `${realizArv.toFixed(0)} / ${realizM3.toFixed(2)}`},
+                    {label:'Saldo (M³)', value: (calc.m3Totais-realizM3).toFixed(2)},
+                ];
+                colunas = ['Data','Bloco','Máquina','Árvores','M³'];
+                linhas = lancsUP.slice().sort((a,b)=>new Date(b.data)-new Date(a.data)).map(l => {
+                    const b = db.blocos.find(x=>x.id===l.idBloco);
+                    const mq = db.maquinas.find(x=>x.id===l.idMaquina);
+                    return [new Date(l.data).toLocaleDateString(), b?b.nome:'-', mq?mq.nome:'-', l.arvores, l.m3.toFixed(2)];
+                });
+            } else if(tipo === 'bloco') {
+                const idBloco = document.getElementById('exp-select-bloco').value;
+                const b = db.blocos.find(x => x.id === idBloco);
+                if(!b) return alert('Selecione um bloco.');
+                const c = calcBloco(b);
+                titulo = 'Relatório do Bloco ' + b.nome + ' (UP ' + c.up.nome + ')';
+                resumo = [
+                    {label:'Status', value: b.status},
+                    {label:'Planejado (Árv/M³)', value: `${c.planArv.toFixed(0)} / ${c.planM3.toFixed(2)}`},
+                    {label:'Realizado (Árv/M³)', value: `${c.realizArv.toFixed(0)} / ${c.realizM3.toFixed(2)}`},
+                    {label:'Saldo (M³)', value: c.saldoM3.toFixed(2)},
+                ];
+                colunas = ['Data','Máquina','Árvores','M³'];
+                linhas = db.lancamentos.filter(l => l.idBloco === idBloco).sort((a,b2)=>new Date(b2.data)-new Date(a.data)).map(l => {
+                    const mq = db.maquinas.find(x=>x.id===l.idMaquina);
+                    return [new Date(l.data).toLocaleDateString(), mq?mq.nome:'-', l.arvores, l.m3.toFixed(2)];
+                });
+            }
+
+            relatorioAtual = {titulo, resumo, colunas, linhas};
+            renderPreviewRelatorio();
+        }
+
+        function renderPreviewRelatorio() {
+            if(!relatorioAtual) return;
+            document.getElementById('exp-preview').style.display = 'block';
+            document.getElementById('exp-preview-titulo').innerText = relatorioAtual.titulo;
+            document.getElementById('exp-preview-resumo').innerHTML = relatorioAtual.resumo.map(r => `
+                <div class="card"><h3>${r.label}</h3><div class="value" style="font-size:1.3rem;">${r.value}</div></div>
+            `).join('');
+            const tabela = document.getElementById('exp-preview-tabela');
+            if(relatorioAtual.linhas.length === 0) {
+                tabela.innerHTML = `<tr><td style="text-align:center; color:var(--text-muted); padding:15px;">Nenhum lançamento encontrado para este filtro.</td></tr>`;
+            } else {
+                tabela.innerHTML = `
+                    <thead><tr>${relatorioAtual.colunas.map(c=>`<th>${c}</th>`).join('')}</tr></thead>
+                    <tbody>${relatorioAtual.linhas.map(linha => `<tr>${linha.map(v=>`<td>${v}</td>`).join('')}</tr>`).join('')}</tbody>
+                `;
+            }
+            document.getElementById('exp-preview').scrollIntoView({behavior:'smooth', block:'start'});
+        }
+
+        function exportarExcel() {
+            if(!relatorioAtual) return;
+            const dados = [relatorioAtual.colunas, ...relatorioAtual.linhas];
+            const ws = XLSX.utils.aoa_to_sheet(dados);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'Relatório');
+            XLSX.writeFile(wb, relatorioAtual.titulo.replace(/[^a-z0-9]/gi,'_') + '.xlsx');
+        }
+        function exportarPDF() {
+            if(!relatorioAtual) return;
+            const btnRow = document.getElementById('exp-preview-botoes');
+            btnRow.style.display = 'none';
+            const el = document.getElementById('exp-preview');
+            html2pdf().set({filename: relatorioAtual.titulo.replace(/[^a-z0-9]/gi,'_') + '.pdf', margin:10}).from(el).save()
+                .then(() => { btnRow.style.display = 'flex'; })
+                .catch(() => { btnRow.style.display = 'flex'; });
+        }
+        function exportarWhatsapp() {
+            if(!relatorioAtual) return;
+            let txt = `*${relatorioAtual.titulo}* 🌲\n\n`;
+            relatorioAtual.resumo.forEach(r => txt += `${r.label}: ${r.value}\n`);
+            txt += '\n';
+            relatorioAtual.linhas.slice(0,20).forEach(linha => txt += linha.join(' | ') + '\n');
+            if(relatorioAtual.linhas.length > 20) txt += `\n_...e mais ${relatorioAtual.linhas.length-20} registro(s)._`;
+            window.open('https://api.whatsapp.com/send?text=' + encodeURIComponent(txt));
+        }
+
+        // ---------- Importar Excel/CSV ----------
+        function processarImportacao() {
+            if(!requireAuth()) return;
+            const fileInput = document.getElementById('file-importar');
+            const file = fileInput.files[0];
+            if(!file) return alert('Selecione um arquivo.');
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const wb = XLSX.read(data, {type:'array'});
+                    const ws = wb.Sheets[wb.SheetNames[0]];
+                    const rows = XLSX.utils.sheet_to_json(ws, {defval:''});
+
+                    let sucesso = 0, erros = [];
+                    rows.forEach((row, i) => {
+                        const nomeMaq = String(row['Máquina'] || row['Maquina'] || '').trim().toUpperCase();
+                        const nomeBloco = String(row['Bloco'] || '').trim();
+                        const arv = parseInt(row['Árvores'] || row['Arvores']);
+                        if(!nomeMaq || !nomeBloco || isNaN(arv)) { erros.push(`Linha ${i+2}: dados incompletos.`); return; }
+
+                        const maq = db.maquinas.find(m => m.nome === nomeMaq);
+                        if(!maq) { erros.push(`Linha ${i+2}: máquina "${nomeMaq}" não encontrada.`); return; }
+                        const bloco = db.blocos.find(b => b.nome.toUpperCase() === nomeBloco.toUpperCase() && b.status === 'Colhendo');
+                        if(!bloco) { erros.push(`Linha ${i+2}: bloco "${nomeBloco}" não encontrado ou já fechado.`); return; }
+                        const up = db.ups.find(u => u.id === bloco.idUP);
+                        if(!up) { erros.push(`Linha ${i+2}: UP do bloco não encontrada.`); return; }
+
+                        let dataLanc = new Date();
+                        if(row['Data']) {
+                            const partes = String(row['Data']).split(/[\/\-]/);
+                            if(partes.length === 3) {
+                                dataLanc = new Date(parseInt(partes[2]), parseInt(partes[1])-1, parseInt(partes[0]), 12);
+                            }
+                        }
+
+                        db.lancamentos.push({
+                            id: Date.now().toString() + '_' + i, idMaquina: maq.id, idUP: up.id, idBloco: bloco.id,
+                            data: dataLanc.toISOString(), arvores: arv, m3: arv * up.vmi, userId: currentUser
+                        });
+                        maq.blocoAtualId = bloco.id;
+                        sucesso++;
+                    });
+
+                    saveData();
+                    renderAll();
+                    let resumo = `<p><b>${sucesso}</b> apontamento(s) importado(s) com sucesso.</p>`;
+                    if(erros.length > 0) resumo += `<p class="negative-text" style="margin-top:8px;">${erros.length} linha(s) com erro:</p><ul style="margin-left:20px; font-size:0.85rem;">${erros.slice(0,15).map(e=>`<li>${e}</li>`).join('')}</ul>`;
+                    document.getElementById('importar-resultado').innerHTML = resumo;
+                    fileInput.value = '';
+                } catch(err) {
+                    document.getElementById('importar-resultado').innerHTML = `<p class="negative-text">Erro ao processar o arquivo: ${err.message}</p>`;
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        function salvarLinkSheets() { alert("Link salvo no cofre digital da Luna! Preparado para a ponte."); }
+        function renderAll() { renderUPs(); renderMaquinas(); renderBlocos(); }
+
+        // ---------- PWA: registro do Service Worker ----------
+        // Isso é o que permite o app aparecer como "instalável" e funcionar offline.
+        if('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .then(reg => console.log('Service Worker registrado:', reg.scope))
+                    .catch(err => console.error('Falha ao registrar Service Worker:', err));
+            });
+        }
+
+        window.onload = loadData;
+    </script>
+</body>
+</html>

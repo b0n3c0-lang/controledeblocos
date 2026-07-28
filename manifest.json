@@ -1,0 +1,25 @@
+{
+  "name": "Controle de Blocos - FonTech",
+  "short_name": "Controle Blocos",
+  "description": "Controle de apontamentos, UPs, blocos e máquinas - FonTech Soluções Florestais",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#f4f6f8",
+  "theme_color": "#256b46",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
