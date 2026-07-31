@@ -31,6 +31,7 @@
             --text-muted: #718096;
             --danger: #e53e3e;
             --success: #38a169;
+            --info: #2b6cb0;
             --border: #e2e8f0;
             --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
         }
@@ -45,6 +46,7 @@
             --text-muted: #a0aec0;
             --border: #4a5568;
             --danger: #fc8181;
+            --info: #63b3ed;
             --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
         }
 
@@ -111,6 +113,7 @@
         .data-table th, .data-table td { padding: 12px; text-align: left; border-bottom: 1px solid var(--border); }
         .data-table th { color: var(--text-muted); text-transform: uppercase; font-size: 0.75rem; white-space: nowrap; }
         .negative-text { color: var(--danger) !important; font-weight: bold; }
+        .positive-text { color: var(--info) !important; font-weight: bold; }
         .progress-container { width: 100%; background: var(--border); border-radius: 10px; height: 10px; margin-top: 8px; overflow: hidden; }
         .progress-bar { height: 100%; background: var(--primary); border-radius: 10px; transition: width 0.4s; }
         .progress-bar.over { background: var(--danger); }
@@ -490,9 +493,8 @@
             <div class="card">
                 <h3>Importar Apontamentos (Excel/CSV)</h3>
                 <p style="font-size:0.85rem; color:var(--text-muted); margin: 10px 0 15px;">
-                    O sistema lê a planilha por posição de coluna (o resto do conteúdo é ignorado):
-                    <b>coluna B</b> = Data, <b>coluna C</b> = Prefixo da máquina (ex: "HVE 672"), <b>coluna N</b> = UP, <b>coluna O</b> = Árvores.
-                    A primeira linha é tratada como cabeçalho e pulada.<br><br>
+                    O sistema lê a <b>1ª linha da planilha como cabeçalho</b> e procura sozinho as colunas de
+                    Data, Prefixo/Máquina, UP e Árvores/Produção (não importa a ordem ou a posição — o resto do conteúdo é ignorado).<br><br>
                     Cada máquina precisa ter um <b>Bloco Atual</b> definido (em Máquinas → Trocar Bloco) — o lançamento é criado nesse bloco,
                     desde que ele pertença à UP indicada na planilha. Linhas em branco são ignoradas; linhas com dados que não batem (máquina, UP ou bloco) aparecem como erro depois de processar.
                 </p>
@@ -562,6 +564,18 @@
                     <div class="form-group"><input type="text" class="form-control" id="cad-user-id" placeholder="ID ou Nome"></div>
                     <div class="form-group"><input type="password" class="form-control" id="cad-user-pass" placeholder="Senha"></div>
                     <button class="btn btn-primary" onclick="cadastrarAdmin()">Cadastrar Admin</button>
+                </div>
+                <div class="card">
+                    <h3>Backup Local</h3>
+                    <p style="font-size: 0.8rem; margin-bottom: 10px; color: var(--text-muted);">
+                        Salve uma cópia de tudo (UPs, blocos, máquinas e lançamentos) num arquivo. Útil pra trocar de celular/PC ou manter uma cópia de segurança.
+                    </p>
+                    <button class="btn btn-primary" onclick="exportarBackup()" style="margin-bottom:12px;"><svg width="18" height="18" fill="white"><use href="#icon-export"></use></svg> Exportar Backup (JSON)</button>
+                    <div style="border-top:1px solid var(--border); padding-top:12px;">
+                        <label style="display:block; font-size:0.85rem; font-weight:600; color:var(--text-muted); margin-bottom:6px;">Restaurar de um backup</label>
+                        <input type="file" class="form-control" id="input-importar-backup" accept=".json" onchange="importarBackup(event)">
+                        <p style="font-size:0.75rem; color:var(--danger); margin-top:6px;">Atenção: isso substitui TODOS os dados atuais deste aparelho pelos do arquivo.</p>
+                    </div>
                 </div>
             </div>
         </section>
@@ -757,6 +771,19 @@
             else { body.setAttribute('data-theme', 'dark'); }
         }
 
+        // Formata número no padrão brasileiro: 2345.46 -> "2.345,46"
+        function formatarNumero(valor, casas = 2) {
+            const n = Number(valor);
+            if(isNaN(n)) return (0).toLocaleString('pt-BR', { minimumFractionDigits: casas, maximumFractionDigits: casas });
+            return n.toLocaleString('pt-BR', { minimumFractionDigits: casas, maximumFractionDigits: casas });
+        }
+        // Lê um número digitado aceitando tanto "0.10" quanto "0,10" (evita o bug clássico
+        // de vírgula virar parte inválida e o parseFloat truncar o valor sem avisar)
+        function paraNumero(texto) {
+            if(typeof texto === 'number') return texto;
+            return parseFloat(String(texto).trim().replace(',', '.'));
+        }
+
         function calcUP(up) {
             const arvTotais = up.area * up.arvHa;
             const m3Totais = arvTotais * up.vmi;
@@ -818,10 +845,11 @@
         }
         function salvarUP() {
             const n = document.getElementById('cad-up-nome').value.trim();
-            const v = parseFloat(document.getElementById('cad-up-vmi').value);
-            const a = parseFloat(document.getElementById('cad-up-arvha').value);
-            const area = parseFloat(document.getElementById('cad-up-area').value);
+            const v = paraNumero(document.getElementById('cad-up-vmi').value);
+            const a = paraNumero(document.getElementById('cad-up-arvha').value);
+            const area = paraNumero(document.getElementById('cad-up-area').value);
             if(!n || isNaN(v) || isNaN(a) || isNaN(area)) return alert("Preencha tudo corretamente.");
+            if(v <= 0 || a <= 0 || area <= 0) return alert("VMi, Árvores/Ha e Área precisam ser maiores que zero.");
 
             if(upEditId) {
                 const u = db.ups.find(x => x.id === upEditId);
@@ -868,7 +896,7 @@
                 tr.onclick = () => abrirUPDetail(u.id);
                 tr.innerHTML = `
                     <td><b>${u.nome}</b></td><td>${u.vmi}</td><td>${u.arvHa}</td><td>${u.area}</td>
-                    <td>${calc.arvTotais.toFixed(0)}</td><td>${calc.m3Totais.toFixed(2)}</td>
+                    <td>${formatarNumero(calc.arvTotais, 0)}</td><td>${formatarNumero(calc.m3Totais, 2)}</td>
                     <td class="row-actions" onclick="event.stopPropagation();">
                         <button class="btn btn-primary btn-sm" onclick="abrirUPDetail('${u.id}')">Ver (${qtdBlocos})</button>
                         <button class="btn back-btn btn-sm" onclick="abrirModalUP('${u.id}')">Editar</button>
@@ -893,7 +921,7 @@
             document.getElementById('upd-vmi').innerText = upSelecionadaParaBlocos.vmi;
             document.getElementById('upd-arvha').innerText = upSelecionadaParaBlocos.arvHa;
             document.getElementById('upd-area').innerText = upSelecionadaParaBlocos.area;
-            document.getElementById('upd-m3total').innerText = calc.m3Totais.toFixed(2);
+            document.getElementById('upd-m3total').innerText = formatarNumero(calc.m3Totais, 2);
 
             renderBlocos();
             renderHistoricoUP();
@@ -914,9 +942,10 @@
         }
         function salvarBloco() {
             const n = document.getElementById('cad-bloco-nome').value.trim();
-            const a = parseFloat(document.getElementById('cad-bloco-area').value);
+            const a = paraNumero(document.getElementById('cad-bloco-area').value);
             const status = document.getElementById('cad-bloco-status').value;
             if(!n || isNaN(a)) return alert("Preencha os campos.");
+            if(a <= 0) return alert("A área precisa ser maior que zero.");
 
             if(blocoEditId) {
                 const b = db.blocos.find(x => x.id === blocoEditId);
@@ -983,9 +1012,9 @@
                     <td>${b.nome}</td>
                     <td><span class="badge" style="background:${b.status==='Fechado'?'var(--danger)':'var(--primary)'};">${b.status}</span></td>
                     <td>${b.area}</td>
-                    <td>${c.planArv.toFixed(0)} / ${c.planM3.toFixed(2)}</td>
-                    <td>${c.realizArv.toFixed(0)} / ${c.realizM3.toFixed(2)}</td>
-                    <td class="${isNeg ? 'negative-text' : ''}">${c.saldoArv.toFixed(0)} / ${c.saldoM3.toFixed(2)}</td>
+                    <td>${formatarNumero(c.planArv, 0)} / ${formatarNumero(c.planM3, 2)}</td>
+                    <td>${formatarNumero(c.realizArv, 0)} / ${formatarNumero(c.realizM3, 2)}</td>
+                    <td class="${isNeg ? 'negative-text' : 'positive-text'}">${formatarNumero(c.saldoArv, 0)} / ${formatarNumero(c.saldoM3, 2)}</td>
                     <td class="row-actions" onclick="event.stopPropagation();">
                         <button class="btn back-btn btn-sm" onclick="abrirModalBloco('${b.id}')">Editar</button>
                         <button class="btn btn-danger btn-sm" onclick="excluirBloco('${b.id}')">Excluir</button>
@@ -1009,7 +1038,7 @@
                 const m = db.maquinas.find(x => x.id === l.idMaquina);
                 const d = new Date(l.data).toLocaleDateString();
                 const tr = document.createElement('tr');
-                tr.innerHTML = `<td>${d}</td><td>${b ? b.nome : '-'}</td><td>${formatarMaquina(m)}</td><td>${l.arvores}</td><td>${l.m3.toFixed(2)}</td>
+                tr.innerHTML = `<td>${d}</td><td>${b ? b.nome : '-'}</td><td>${formatarMaquina(m)}</td><td>${l.arvores}</td><td>${formatarNumero(l.m3, 2)}</td>
                     <td class="row-actions">
                         <button class="btn back-btn btn-sm" onclick="abrirModalEditarLancamento('${l.id}')">Editar</button>
                         <button class="btn btn-danger btn-sm" onclick="excluirLancamento('${l.id}')">Excluir</button>
@@ -1035,12 +1064,12 @@
             document.getElementById('bd-title').innerText = 'Bloco ' + blocoSelecionado.nome + ' (UP ' + c.up.nome + ')';
             document.getElementById('bd-status').innerText = blocoSelecionado.status;
             document.getElementById('bd-area').innerText = blocoSelecionado.area;
-            document.getElementById('bd-plan').innerText = c.planArv.toFixed(0) + ' árv / ' + c.planM3.toFixed(2) + ' m³';
-            document.getElementById('bd-realiz').innerText = c.realizArv.toFixed(0) + ' árv / ' + c.realizM3.toFixed(2) + ' m³';
+            document.getElementById('bd-plan').innerText = formatarNumero(c.planArv, 0) + ' árv / ' + formatarNumero(c.planM3, 2) + ' m³';
+            document.getElementById('bd-realiz').innerText = formatarNumero(c.realizArv, 0) + ' árv / ' + formatarNumero(c.realizM3, 2) + ' m³';
 
             const saldoEl = document.getElementById('bd-saldo');
-            saldoEl.innerText = c.saldoM3.toFixed(2) + ' m³';
-            saldoEl.className = c.saldoM3 < 0 ? 'negative-text' : '';
+            saldoEl.innerText = formatarNumero(c.saldoM3, 2) + ' m³';
+            saldoEl.className = c.saldoM3 < 0 ? 'negative-text' : 'positive-text';
             document.getElementById('bd-pct').innerText = ' (' + c.perColhido.toFixed(1) + '% colhido)';
 
             const bar = document.getElementById('bd-bar');
@@ -1056,7 +1085,7 @@
                     const m = db.maquinas.find(x => x.id === l.idMaquina);
                     const d = new Date(l.data).toLocaleDateString();
                     const tr = document.createElement('tr');
-                    tr.innerHTML = `<td>${d}</td><td>${formatarMaquina(m)}</td><td>${l.arvores}</td><td>${l.m3.toFixed(2)}</td>
+                    tr.innerHTML = `<td>${d}</td><td>${formatarMaquina(m)}</td><td>${l.arvores}</td><td>${formatarNumero(l.m3, 2)}</td>
                         <td class="row-actions">
                             <button class="btn back-btn btn-sm" onclick="abrirModalEditarLancamento('${l.id}')">Editar</button>
                             <button class="btn btn-danger btn-sm" onclick="excluirLancamento('${l.id}')">Excluir</button>
@@ -1163,7 +1192,7 @@
                     <td>${m.nome}</td>
                     <td><span class="badge" style="background:${inativa ? 'var(--text-muted)' : 'var(--primary)'};">${m.status}</span></td>
                     <td>${blocoAtual ? `Bloco ${blocoAtual.nome} <span style="color:var(--text-muted); font-size:0.8rem;">(UP ${upAtual ? upAtual.nome : '-'})</span>` : '<span style="color:var(--text-muted);">-</span>'}</td>
-                    <td>${totArv.toFixed(0)}</td><td>${totM3.toFixed(2)}</td>
+                    <td>${formatarNumero(totArv, 0)}</td><td>${formatarNumero(totM3, 2)}</td>
                     <td class="row-actions">
                         <button class="btn back-btn btn-sm" onclick="abrirHistMaquinaView('${m.id}')">Histórico</button>
                         <button class="btn back-btn btn-sm" onclick="abrirModalTrocarBloco('${m.id}')">Trocar Bloco</button>
@@ -1200,11 +1229,11 @@
                     const c = calcBloco(b);
                     const pctParticipacao = c.realizArv > 0 ? (l.arvores / c.realizArv) : 0;
                     const saldoM3Resp = c.saldoM3 * pctParticipacao;
-                    const respText = saldoM3Resp < 0 ? `<span class="negative-text">${saldoM3Resp.toFixed(2)} m³</span>` : `+${saldoM3Resp.toFixed(2)} m³`;
+                    const respText = saldoM3Resp < 0 ? `<span class="negative-text">${formatarNumero(saldoM3Resp, 2)} m³</span>` : `<span class="positive-text">+${formatarNumero(saldoM3Resp, 2)} m³</span>`;
 
                     const d = new Date(l.data).toLocaleDateString();
                     const tr = document.createElement('tr');
-                    tr.innerHTML = `<td>${d}</td><td>${u.nome}</td><td>${b.nome}</td><td>${l.arvores}</td><td>${l.m3.toFixed(2)}</td><td>${respText}</td>
+                    tr.innerHTML = `<td>${d}</td><td>${u.nome}</td><td>${b.nome}</td><td>${l.arvores}</td><td>${formatarNumero(l.m3, 2)}</td><td>${respText}</td>
                         <td class="row-actions">
                             <button class="btn back-btn btn-sm" onclick="abrirModalEditarLancamento('${l.id}')">Editar</button>
                             <button class="btn btn-danger btn-sm" onclick="excluirLancamento('${l.id}')">Excluir</button>
@@ -1308,15 +1337,15 @@
                     const c = calcBloco(bloco);
                     document.getElementById('lan-bloco-info').style.display = 'block';
                     document.getElementById('lan-info-vmi').innerText = up.vmi;
-                    document.getElementById('lan-info-plan-arv').innerText = c.planArv.toFixed(0);
-                    document.getElementById('lan-info-plan-m3').innerText = c.planM3.toFixed(2);
+                    document.getElementById('lan-info-plan-arv').innerText = formatarNumero(c.planArv, 0);
+                    document.getElementById('lan-info-plan-m3').innerText = formatarNumero(c.planM3, 2);
 
                     const rArv = document.getElementById('lan-info-rest-arv');
                     const rM3 = document.getElementById('lan-info-rest-m3');
-                    rArv.innerText = c.saldoArv.toFixed(0);
-                    rM3.innerText = c.saldoM3.toFixed(2);
-                    rArv.className = c.saldoArv < 0 ? 'negative-text' : '';
-                    rM3.className = c.saldoM3 < 0 ? 'negative-text' : '';
+                    rArv.innerText = formatarNumero(c.saldoArv, 0);
+                    rM3.innerText = formatarNumero(c.saldoM3, 2);
+                    rArv.className = c.saldoArv < 0 ? 'negative-text' : 'positive-text';
+                    rM3.className = c.saldoM3 < 0 ? 'negative-text' : 'positive-text';
 
                     const bar = document.getElementById('lan-info-bar');
                     bar.style.width = Math.min(c.perColhido, 100) + '%';
@@ -1464,11 +1493,11 @@
             const m3Hj = lancHj.reduce((s,l)=>s+l.m3, 0);
 
             document.getElementById('dash-arv-diaria').innerText = arvHj;
-            document.getElementById('dash-m3-diaria').innerText = m3Hj.toFixed(2);
+            document.getElementById('dash-m3-diaria').innerText = formatarNumero(m3Hj, 2);
 
             const arvTot = db.lancamentos.reduce((s,l)=>s+l.arvores, 0);
             const m3Tot = db.lancamentos.reduce((s,l)=>s+l.m3, 0);
-            document.getElementById('dash-m3-total').innerText = m3Tot.toFixed(2);
+            document.getElementById('dash-m3-total').innerText = formatarNumero(m3Tot, 2);
 
             // Agrupa por dia (chave AAAA-MM-DD) para poder ordenar cronologicamente de verdade
             const porDia = {};
@@ -1480,7 +1509,7 @@
             });
             const chavesOrdenadas = Object.keys(porDia).sort();
             const mediaM3 = chavesOrdenadas.length > 0 ? (m3Tot / chavesOrdenadas.length) : 0;
-            document.getElementById('dash-media-diaria').innerText = mediaM3.toFixed(2);
+            document.getElementById('dash-media-diaria').innerText = formatarNumero(mediaM3, 2);
 
             const bAtivos = db.blocos.filter(b => b.status === 'Colhendo');
             const boxBAtivos = document.getElementById('dash-blocos-ativos');
@@ -1494,7 +1523,7 @@
                                 <strong style="cursor:pointer; color:var(--primary);" onclick="abrirUPDetail('${c.up.id}')">${c.up.nome} - Bloco ${b.nome}</strong>
                                 <button class="btn btn-danger btn-sm" onclick="finalizarBlocoPorId('${b.id}')">Finalizar</button>
                             </div>
-                            <span style="font-size:0.8rem;">Colhido: ${c.perColhido.toFixed(1)}% | Saldo: <span class="${isNeg?'negative-text':''}">${c.saldoM3.toFixed(2)} m³</span></span>
+                            <span style="font-size:0.8rem;">Colhido: ${c.perColhido.toFixed(1)}% | Saldo: <span class="${isNeg?'negative-text':'positive-text'}">${formatarNumero(c.saldoM3, 2)} m³</span></span>
                             <div class="progress-container"><div class="progress-bar ${c.perColhido>=100?'over':''}" style="width:${Math.min(c.perColhido,100)}%;"></div></div>
                         </div>
                     `;
@@ -1507,7 +1536,7 @@
             const ranking = Object.values(mqMap).sort((a,b)=>b.m3 - a.m3);
             document.getElementById('dash-ranking').innerHTML = ranking.length ? ranking.slice(0,5).map((r,i) => `
                 <div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--border);">
-                    <span>${i+1}º ${r.nome}</span><strong>${r.m3.toFixed(2)}</strong>
+                    <span>${i+1}º ${r.nome}</span><strong>${formatarNumero(r.m3, 2)}</strong>
                 </div>
             `).join('') : '<p style="color:var(--text-muted); font-size:0.9rem;">Nenhuma máquina com produção ainda.</p>';
 
@@ -1585,15 +1614,15 @@
                 const m3Tot = db.lancamentos.reduce((s,l)=>s+l.m3,0);
                 resumo = [
                     {label:'Total de Apontamentos', value: db.lancamentos.length},
-                    {label:'Árvores Totais', value: arvTot.toFixed(0)},
-                    {label:'M³ Totais', value: m3Tot.toFixed(2)},
+                    {label:'Árvores Totais', value: formatarNumero(arvTot, 0)},
+                    {label:'M³ Totais', value: formatarNumero(m3Tot, 2)},
                 ];
                 colunas = ['Data','Máquina','UP','Bloco','Árvores','M³','Inspetor'];
                 linhas = db.lancamentos.slice().sort((a,b)=>new Date(b.data)-new Date(a.data)).map(l => {
                     const m = db.maquinas.find(x=>x.id===l.idMaquina);
                     const u = db.ups.find(x=>x.id===l.idUP);
                     const b = db.blocos.find(x=>x.id===l.idBloco);
-                    return [new Date(l.data).toLocaleDateString(), formatarMaquina(m), u?u.nome:'-', b?b.nome:'-', l.arvores, l.m3.toFixed(2), l.userId||'-'];
+                    return [new Date(l.data).toLocaleDateString(), formatarMaquina(m), u?u.nome:'-', b?b.nome:'-', l.arvores, formatarNumero(l.m3, 2), l.userId||'-'];
                 });
             } else if(tipo === 'maquina') {
                 const idMaq = document.getElementById('exp-select-maquina').value;
@@ -1605,8 +1634,8 @@
                 const m3Tot = lancs.reduce((s,l)=>s+l.m3,0);
                 resumo = [
                     {label:'Apontamentos', value: lancs.length},
-                    {label:'Árvores Realizadas', value: arvTot.toFixed(0)},
-                    {label:'M³ Realizados', value: m3Tot.toFixed(2)},
+                    {label:'Árvores Realizadas', value: formatarNumero(arvTot, 0)},
+                    {label:'M³ Realizados', value: formatarNumero(m3Tot, 2)},
                 ];
                 const porBloco = {};
                 lancs.forEach(l => {
@@ -1621,7 +1650,7 @@
                     const c = calcBloco(b);
                     const dadosMaq = porBloco[idBloco];
                     const pct = c.planArv > 0 ? (dadosMaq.arv / c.planArv * 100) : 0;
-                    return [c.up.nome, b.nome, `${c.planArv.toFixed(0)} / ${c.planM3.toFixed(2)}`, `${dadosMaq.arv.toFixed(0)} / ${dadosMaq.m3.toFixed(2)}`, pct.toFixed(1)+'%'];
+                    return [c.up.nome, b.nome, `${formatarNumero(c.planArv, 0)} / ${formatarNumero(c.planM3, 2)}`, `${formatarNumero(dadosMaq.arv, 0)} / ${formatarNumero(dadosMaq.m3, 2)}`, pct.toFixed(1)+'%'];
                 }).filter(Boolean);
                 if(linhas.length === 0) { colunas = ['Aviso']; linhas = [['Esta máquina ainda não tem lançamentos registrados.']]; }
             } else if(tipo === 'up') {
@@ -1635,15 +1664,15 @@
                 const realizM3 = lancsUP.reduce((s,l)=>s+l.m3,0);
                 resumo = [
                     {label:'Área (Ha)', value: u.area},
-                    {label:'Planejado (Árv/M³)', value: `${calc.arvTotais.toFixed(0)} / ${calc.m3Totais.toFixed(2)}`},
-                    {label:'Realizado (Árv/M³)', value: `${realizArv.toFixed(0)} / ${realizM3.toFixed(2)}`},
-                    {label:'Saldo (M³)', value: (calc.m3Totais-realizM3).toFixed(2)},
+                    {label:'Planejado (Árv/M³)', value: `${formatarNumero(calc.arvTotais, 0)} / ${formatarNumero(calc.m3Totais, 2)}`},
+                    {label:'Realizado (Árv/M³)', value: `${formatarNumero(realizArv, 0)} / ${formatarNumero(realizM3, 2)}`},
+                    {label:'Saldo (M³)', value: formatarNumero((calc.m3Totais-realizM3), 2)},
                 ];
                 colunas = ['Data','Bloco','Máquina','Árvores','M³'];
                 linhas = lancsUP.slice().sort((a,b)=>new Date(b.data)-new Date(a.data)).map(l => {
                     const b = db.blocos.find(x=>x.id===l.idBloco);
                     const mq = db.maquinas.find(x=>x.id===l.idMaquina);
-                    return [new Date(l.data).toLocaleDateString(), b?b.nome:'-', formatarMaquina(mq), l.arvores, l.m3.toFixed(2)];
+                    return [new Date(l.data).toLocaleDateString(), b?b.nome:'-', formatarMaquina(mq), l.arvores, formatarNumero(l.m3, 2)];
                 });
             } else if(tipo === 'bloco') {
                 const idBloco = document.getElementById('exp-select-bloco').value;
@@ -1653,14 +1682,14 @@
                 titulo = 'Relatório do Bloco ' + b.nome + ' (UP ' + c.up.nome + ')';
                 resumo = [
                     {label:'Status', value: b.status},
-                    {label:'Planejado (Árv/M³)', value: `${c.planArv.toFixed(0)} / ${c.planM3.toFixed(2)}`},
-                    {label:'Realizado (Árv/M³)', value: `${c.realizArv.toFixed(0)} / ${c.realizM3.toFixed(2)}`},
-                    {label:'Saldo (M³)', value: c.saldoM3.toFixed(2)},
+                    {label:'Planejado (Árv/M³)', value: `${formatarNumero(c.planArv, 0)} / ${formatarNumero(c.planM3, 2)}`},
+                    {label:'Realizado (Árv/M³)', value: `${formatarNumero(c.realizArv, 0)} / ${formatarNumero(c.realizM3, 2)}`},
+                    {label:'Saldo (M³)', value: formatarNumero(c.saldoM3, 2)},
                 ];
                 colunas = ['Data','Máquina','Árvores','M³'];
                 linhas = db.lancamentos.filter(l => l.idBloco === idBloco).sort((a,b2)=>new Date(b2.data)-new Date(a.data)).map(l => {
                     const mq = db.maquinas.find(x=>x.id===l.idMaquina);
-                    return [new Date(l.data).toLocaleDateString(), formatarMaquina(mq), l.arvores, l.m3.toFixed(2)];
+                    return [new Date(l.data).toLocaleDateString(), formatarMaquina(mq), l.arvores, formatarNumero(l.m3, 2)];
                 });
             }
 
@@ -1715,10 +1744,40 @@
         }
 
         // ---------- Importar Excel/CSV ----------
-        // Colunas fixas da planilha (posição, não pelo nome do cabeçalho, já que a
-        // planilha real tem muitas outras colunas que não usamos):
-        // B = Data | C = Prefixo da máquina (ex: "HVE 672") | N = UP | O = Árvores
-        const IMPORT_COL = { DATA: 1, PREFIXO: 2, UP: 13, ARVORES: 14 };
+        // Em vez de depender de posição fixa de coluna, varremos a 1ª linha (cabeçalho)
+        // procurando por palavras-chave, então funciona mesmo se a ordem das colunas mudar.
+        function normalizarTexto(s) {
+            return (s || '').toString().trim().toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        }
+        function detectarColunasImportacao(headerRow) {
+            const normalizados = headerRow.map(normalizarTexto);
+            const usadas = new Set();
+
+            function acharColuna(testes) {
+                for(const teste of testes) {
+                    for(let i = 0; i < normalizados.length; i++) {
+                        if(usadas.has(i)) continue;
+                        const cel = normalizados[i];
+                        if(!cel) continue;
+                        if(teste.exato ? cel === teste.valor : cel.includes(teste.valor)) {
+                            usadas.add(i);
+                            return i;
+                        }
+                    }
+                }
+                return -1;
+            }
+
+            // Sinais mais específicos primeiro, pra não "roubar" a coluna certa de outro campo
+            // (ex: "Unidade de Produção" não pode ganhar a coluna de "Árvores/Produção")
+            const idxArvoresEspecifico = acharColuna([{valor:'ARVORE', exato:false}]);
+            const idxUP = acharColuna([{valor:'UP', exato:true}, {valor:'UNIDADE DE PRODU', exato:false}]);
+            const idxData = acharColuna([{valor:'DATA', exato:false}, {valor:'DIA', exato:true}]);
+            const idxPrefixo = acharColuna([{valor:'PREFIXO', exato:false}, {valor:'MAQUINA', exato:false}, {valor:'EQUIPAMENTO', exato:false}, {valor:'FROTA', exato:false}]);
+            const idxArvores = idxArvoresEspecifico !== -1 ? idxArvoresEspecifico : acharColuna([{valor:'PRODU', exato:false}]);
+
+            return { data: idxData, prefixo: idxPrefixo, up: idxUP, arvores: idxArvores };
+        }
 
         // A planilha traz "HVE 672" mas cadastramos só o prefixo "672" — tenta achar
         // a máquina cujo prefixo bate com alguma "palavra" do texto da célula.
@@ -1748,15 +1807,39 @@
                     // header:1 -> array de arrays por posição de coluna (0=A, 1=B, 2=C...)
                     const linhas = XLSX.utils.sheet_to_json(ws, {header: 1, defval: ''});
 
+                    if(linhas.length < 2) {
+                        document.getElementById('importar-resultado').innerHTML = `<p class="negative-text">A planilha está vazia ou só tem o cabeçalho.</p>`;
+                        return;
+                    }
+
+                    const cabecalho = linhas[0];
+                    const colunas = detectarColunasImportacao(cabecalho);
+
+                    const faltando = [];
+                    if(colunas.data === -1) faltando.push('Data');
+                    if(colunas.prefixo === -1) faltando.push('Prefixo/Máquina');
+                    if(colunas.up === -1) faltando.push('UP');
+                    if(colunas.arvores === -1) faltando.push('Árvores/Produção');
+
+                    if(faltando.length > 0) {
+                        const listaCabecalho = cabecalho.map((c, i) => c ? `${XLSX.utils.encode_col(i)}: "${c}"` : null).filter(Boolean).join(', ');
+                        document.getElementById('importar-resultado').innerHTML = `
+                            <p class="negative-text">Não consegui identificar a coluna de: <b>${faltando.join(', ')}</b> na 1ª linha da planilha.</p>
+                            <p style="font-size:0.85rem; color:var(--text-muted); margin-top:6px;">Cabeçalhos encontrados: ${listaCabecalho || '(nenhum texto na 1ª linha)'}</p>
+                            <p style="font-size:0.85rem; color:var(--text-muted); margin-top:6px;">Ajuste o nome dessa coluna na planilha (ex: "Data", "Prefixo", "UP", "Árvores" ou "Produção") e tente novamente.</p>
+                        `;
+                        return;
+                    }
+
                     let sucesso = 0, erros = [], ignoradas = 0;
 
                     linhas.forEach((linha, i) => {
                         if(i === 0) return; // pula a linha de cabeçalho
 
-                        const dataCel = linha[IMPORT_COL.DATA];
-                        const prefixoTexto = String(linha[IMPORT_COL.PREFIXO] || '').trim();
-                        const upTexto = String(linha[IMPORT_COL.UP] || '').trim();
-                        const arvTexto = String(linha[IMPORT_COL.ARVORES] || '').trim();
+                        const dataCel = linha[colunas.data];
+                        const prefixoTexto = String(linha[colunas.prefixo] || '').trim();
+                        const upTexto = String(linha[colunas.up] || '').trim();
+                        const arvTexto = String(linha[colunas.arvores] || '').trim();
                         const dataTexto = dataCel instanceof Date ? dataCel.toLocaleDateString() : String(dataCel || '').trim();
 
                         // Ignora silenciosamente linhas sem os dados que usamos (planilha tem muita coisa que não é nossa)
@@ -1794,7 +1877,9 @@
 
                     saveData();
                     renderAll();
-                    let resumo = `<p><b>${sucesso}</b> apontamento(s) importado(s) com sucesso.</p>`;
+                    const resumoColunas = `Data: coluna ${XLSX.utils.encode_col(colunas.data)} | Prefixo: coluna ${XLSX.utils.encode_col(colunas.prefixo)} | UP: coluna ${XLSX.utils.encode_col(colunas.up)} | Árvores: coluna ${XLSX.utils.encode_col(colunas.arvores)}`;
+                    let resumo = `<p style="font-size:0.8rem; color:var(--text-muted);">Colunas identificadas automaticamente — ${resumoColunas}</p>`;
+                    resumo += `<p style="margin-top:8px;"><b>${sucesso}</b> apontamento(s) importado(s) com sucesso.</p>`;
                     if(ignoradas > 0) resumo += `<p style="color:var(--text-muted); margin-top:6px; font-size:0.85rem;">${ignoradas} linha(s) em branco/irrelevantes ignoradas.</p>`;
                     if(erros.length > 0) resumo += `<p class="negative-text" style="margin-top:8px;">${erros.length} linha(s) com erro:</p><ul style="margin-left:20px; font-size:0.85rem;">${erros.slice(0,20).map(e=>`<li>${e}</li>`).join('')}</ul>`;
                     document.getElementById('importar-resultado').innerHTML = resumo;
@@ -1807,6 +1892,62 @@
         }
 
         function salvarLinkSheets() { alert("Link salvo no cofre digital da Luna! Preparado para a ponte."); }
+
+        // ---------- Backup Local (exportar tudo / restaurar de um arquivo) ----------
+        function exportarBackup() {
+            const backup = {
+                app: 'controle-blocos-fontech',
+                versao: 1,
+                exportadoEm: new Date().toISOString(),
+                dados: db
+            };
+            const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            const hoje = new Date().toISOString().split('T')[0];
+            a.download = `backup_controle_blocos_${hoje}.json`;
+            a.click();
+        }
+        function importarBackup(event) {
+            const file = event.target.files[0];
+            if(!file) return;
+            if(!requireAuth()) { event.target.value = ''; return; }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const conteudo = JSON.parse(e.target.result);
+                    const novoDb = conteudo.dados || conteudo; // aceita tanto o arquivo exportado quanto um JSON "cru"
+
+                    const camposEsperados = ['ups', 'blocos', 'maquinas', 'lancamentos'];
+                    const valido = camposEsperados.every(campo => Array.isArray(novoDb[campo]));
+                    if(!valido) {
+                        alert('Arquivo inválido: não parece ser um backup do Controle de Blocos.');
+                        event.target.value = '';
+                        return;
+                    }
+
+                    const resumo = `UPs: ${novoDb.ups.length} | Blocos: ${novoDb.blocos.length} | Máquinas: ${novoDb.maquinas.length} | Lançamentos: ${novoDb.lancamentos.length}`;
+                    if(!confirm(`Isso vai APAGAR os dados atuais deste aparelho e substituir pelos do backup:\n\n${resumo}\n\nDeseja continuar?`)) {
+                        event.target.value = '';
+                        return;
+                    }
+
+                    if(!novoDb.users) novoDb.users = db.users;
+                    db = novoDb;
+                    saveData();
+                    currentUser = null;
+                    checkAuth();
+                    renderAll();
+                    if(estaNaView('dashboard')) atualizarDashboard();
+                    alert('Backup restaurado com sucesso!');
+                } catch(err) {
+                    alert('Erro ao ler o arquivo: ' + err.message);
+                }
+                event.target.value = '';
+            };
+            reader.readAsText(file);
+        }
         function renderAll() { renderUPs(); renderMaquinas(); renderBlocos(); }
 
         // ---------- PWA: registro do Service Worker ----------
