@@ -296,8 +296,18 @@
             </div>
 
             <div class="card">
-                <h3>Resumo de Blocos Ativos</h3>
-                <div id="dash-blocos-ativos">Nenhum bloco ativo no momento.</div>
+                <h3>Blocos em Colheita</h3>
+                <div id="dash-blocos-ativos">Nenhum bloco em colheita no momento.</div>
+            </div>
+
+            <div class="card">
+                <h3>Blocos Aguardando Corte</h3>
+                <div id="dash-blocos-aguardando">Nenhum bloco aguardando.</div>
+            </div>
+
+            <div class="card">
+                <h3>Blocos Fechados Recentemente</h3>
+                <div id="dash-blocos-fechados">Nenhum bloco fechado recentemente.</div>
             </div>
         </section>
 
@@ -460,6 +470,7 @@
                 <h3 style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
                     <span id="bd-title">Bloco</span>
                     <div style="display:flex; gap:8px;">
+                        <button class="btn btn-primary btn-sm" id="bd-btn-iniciar" style="display:none;" onclick="iniciarColheitaBloco(blocoSelecionado.id)">Iniciar Colheita</button>
                         <button class="btn btn-danger btn-sm" onclick="finalizarBlocoAtualDetail()">Finalizar Bloco</button>
                         <button class="btn back-btn" onclick="voltarParaUPDetail()">⬅ Voltar para UP</button>
                     </div>
@@ -608,6 +619,7 @@
             <div class="form-group"><label>Hectares</label><input type="number" step="0.01" class="form-control" id="cad-bloco-area"></div>
             <div class="form-group"><label>Status</label>
                 <select class="form-control" id="cad-bloco-status">
+                    <option value="Aguardando">Aguardando</option>
                     <option value="Colhendo">Colhendo</option>
                     <option value="Fechado">Fechado</option>
                 </select>
@@ -981,6 +993,19 @@
             if(b.status === 'Fechado') return alert('Esse bloco já está fechado.');
             if(!confirm('Deseja realmente FECHAR o bloco ' + b.nome + '?')) return;
             b.status = 'Fechado';
+            b.dataFechamento = new Date().toISOString();
+            saveData();
+            renderBlocos(); renderUPs();
+            renderBlocoDetail();
+            atualizarDashboard();
+        }
+        function iniciarColheitaBloco(id) {
+            if(!requireAuth()) return;
+            const b = db.blocos.find(x => x.id === id);
+            if(!b) return;
+            if(b.status !== 'Aguardando') return alert('Esse bloco não está Aguardando.');
+            if(!confirm('Iniciar colheita do bloco ' + b.nome + '?')) return;
+            b.status = 'Colhendo';
             saveData();
             renderBlocos(); renderUPs();
             renderBlocoDetail();
@@ -1010,12 +1035,13 @@
                 tr.onclick = () => abrirBlocoDetail(b.id);
                 tr.innerHTML = `
                     <td>${b.nome}</td>
-                    <td><span class="badge" style="background:${b.status==='Fechado'?'var(--danger)':'var(--primary)'};">${b.status}</span></td>
+                    <td><span class="badge" style="background:${b.status==='Fechado'?'var(--danger)':b.status==='Aguardando'?'var(--text-muted)':'var(--primary)'};">${b.status}</span></td>
                     <td>${b.area}</td>
                     <td>${formatarNumero(c.planArv, 0)} / ${formatarNumero(c.planM3, 2)}</td>
                     <td>${formatarNumero(c.realizArv, 0)} / ${formatarNumero(c.realizM3, 2)}</td>
                     <td class="${isNeg ? 'negative-text' : 'positive-text'}">${formatarNumero(c.saldoArv, 0)} / ${formatarNumero(c.saldoM3, 2)}</td>
                     <td class="row-actions" onclick="event.stopPropagation();">
+                        ${b.status==='Aguardando' ? `<button class="btn btn-primary btn-sm" onclick="iniciarColheitaBloco('${b.id}')">Iniciar Colheita</button>` : ''}
                         <button class="btn back-btn btn-sm" onclick="abrirModalBloco('${b.id}')">Editar</button>
                         <button class="btn btn-danger btn-sm" onclick="excluirBloco('${b.id}')">Excluir</button>
                     </td>
@@ -1063,6 +1089,7 @@
             const c = calcBloco(blocoSelecionado);
             document.getElementById('bd-title').innerText = 'Bloco ' + blocoSelecionado.nome + ' (UP ' + c.up.nome + ')';
             document.getElementById('bd-status').innerText = blocoSelecionado.status;
+            document.getElementById('bd-btn-iniciar').style.display = blocoSelecionado.status === 'Aguardando' ? 'inline-flex' : 'none';
             document.getElementById('bd-area').innerText = blocoSelecionado.area;
             document.getElementById('bd-plan').innerText = formatarNumero(c.planArv, 0) + ' árv / ' + formatarNumero(c.planM3, 2) + ' m³';
             document.getElementById('bd-realiz').innerText = formatarNumero(c.realizArv, 0) + ' árv / ' + formatarNumero(c.realizM3, 2) + ' m³';
@@ -1224,15 +1251,25 @@
                 lancs.forEach(l => {
                     const b = db.blocos.find(x => x.id === l.idBloco);
                     const u = db.ups.find(x => x.id === l.idUP);
-                    if(!b || !u) return;
+                    if(!u) return;
+                    const d = new Date(l.data).toLocaleDateString();
+                    const tr = document.createElement('tr');
+
+                    if(!b) {
+                        tr.innerHTML = `<td>${d}</td><td>${u.nome}</td><td colspan="2"><span class="badge" style="background:var(--info);">Pendente de Bloco</span></td><td>${formatarNumero(l.m3, 2)}</td><td>-</td>
+                            <td class="row-actions">
+                                <button class="btn btn-primary btn-sm" onclick="abrirModalEditarLancamento('${l.id}')">Atribuir Bloco</button>
+                                <button class="btn btn-danger btn-sm" onclick="excluirLancamento('${l.id}')">Excluir</button>
+                            </td>`;
+                        tb.appendChild(tr);
+                        return;
+                    }
 
                     const c = calcBloco(b);
                     const pctParticipacao = c.realizArv > 0 ? (l.arvores / c.realizArv) : 0;
                     const saldoM3Resp = c.saldoM3 * pctParticipacao;
                     const respText = saldoM3Resp < 0 ? `<span class="negative-text">${formatarNumero(saldoM3Resp, 2)} m³</span>` : `<span class="positive-text">+${formatarNumero(saldoM3Resp, 2)} m³</span>`;
 
-                    const d = new Date(l.data).toLocaleDateString();
-                    const tr = document.createElement('tr');
                     tr.innerHTML = `<td>${d}</td><td>${u.nome}</td><td>${b.nome}</td><td>${l.arvores}</td><td>${formatarNumero(l.m3, 2)}</td><td>${respText}</td>
                         <td class="row-actions">
                             <button class="btn back-btn btn-sm" onclick="abrirModalEditarLancamento('${l.id}')">Editar</button>
@@ -1473,6 +1510,7 @@
             if(bloco) {
                 if(confirm("Deseja realmente FECHAR o bloco " + bloco.nome + "?")) {
                     bloco.status = 'Fechado';
+                    bloco.dataFechamento = new Date().toISOString();
                     saveData();
                     document.getElementById('lan-bloco').value = '';
                     document.getElementById('lan-up-detectada').value = '';
@@ -1528,7 +1566,39 @@
                         </div>
                     `;
                 }).join('');
-            } else { boxBAtivos.innerHTML = "Nenhum bloco ativo no momento."; }
+            } else { boxBAtivos.innerHTML = "Nenhum bloco em colheita no momento."; }
+
+            const bAguardando = db.blocos.filter(b => b.status === 'Aguardando');
+            const boxAguardando = document.getElementById('dash-blocos-aguardando');
+            if(bAguardando.length > 0) {
+                boxAguardando.innerHTML = bAguardando.map(b => {
+                    const up = db.ups.find(u => u.id === b.idUP);
+                    return `
+                        <div style="padding:10px 12px; border:1px solid var(--border); margin-bottom:8px; border-radius:8px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+                            <strong style="cursor:pointer; color:var(--text-main);" onclick="abrirUPDetail('${up ? up.id : ''}')">${up ? up.nome : '-'} - Bloco ${b.nome}</strong>
+                            <button class="btn btn-primary btn-sm" onclick="iniciarColheitaBloco('${b.id}')">Iniciar Colheita</button>
+                        </div>
+                    `;
+                }).join('');
+            } else { boxAguardando.innerHTML = "Nenhum bloco aguardando."; }
+
+            const bFechados = db.blocos.filter(b => b.status === 'Fechado')
+                .sort((a,b2) => new Date(b2.dataFechamento||0) - new Date(a.dataFechamento||0))
+                .slice(0, 8);
+            const boxFechados = document.getElementById('dash-blocos-fechados');
+            if(bFechados.length > 0) {
+                boxFechados.innerHTML = bFechados.map(b => {
+                    const c = calcBloco(b);
+                    const up = db.ups.find(u => u.id === b.idUP);
+                    const dataTxt = b.dataFechamento ? new Date(b.dataFechamento).toLocaleDateString() : '-';
+                    return `
+                        <div style="padding:10px 12px; border:1px solid var(--border); margin-bottom:8px; border-radius:8px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+                            <span style="cursor:pointer;" onclick="abrirUPDetail('${up ? up.id : ''}')"><strong>${up ? up.nome : '-'} - Bloco ${b.nome}</strong> <span style="color:var(--text-muted); font-size:0.8rem;">(fechado em ${dataTxt})</span></span>
+                            <span style="font-size:0.85rem;">${formatarNumero(c.realizM3, 2)} m³</span>
+                        </div>
+                    `;
+                }).join('');
+            } else { boxFechados.innerHTML = "Nenhum bloco fechado recentemente."; }
 
             const mqMap = {};
             db.maquinas.forEach(m => mqMap[m.id] = {nome: formatarMaquina(m), m3: 0});
@@ -1831,7 +1901,7 @@
                         return;
                     }
 
-                    let sucesso = 0, erros = [], ignoradas = 0;
+                    let sucesso = 0, erros = [], ignoradas = 0, pendentes = 0;
 
                     linhas.forEach((linha, i) => {
                         if(i === 0) return; // pula a linha de cabeçalho
@@ -1854,10 +1924,12 @@
                         const up = db.ups.find(u => u.nome.toUpperCase() === upTexto.toUpperCase());
                         if(!up) { erros.push(`Linha ${i+1}: UP "${upTexto}" não cadastrada no sistema.`); return; }
 
-                        // Usa o Bloco Atual já configurado na máquina, confirmando que é da UP da linha
+                        // Usa o Bloco Atual da máquina só se ele for da mesma UP da planilha.
+                        // Se não bater (ou não tiver bloco atual), importa mesmo assim como PENDENTE
+                        // (idBloco null) — não entra em nenhum saldo até alguém atribuir o bloco depois.
                         const blocoAtual = getBlocoAtualDaMaquina(maq.id);
-                        if(!blocoAtual) { erros.push(`Linha ${i+1}: ${formatarMaquina(maq)} não tem Bloco Atual definido (configure em Máquinas > Trocar Bloco).`); return; }
-                        if(blocoAtual.idUP !== up.id) { erros.push(`Linha ${i+1}: Bloco Atual de ${formatarMaquina(maq)} é da UP ${db.ups.find(u2=>u2.id===blocoAtual.idUP)?.nome || '?'}, não de "${upTexto}" como está na planilha.`); return; }
+                        const blocoValido = blocoAtual && blocoAtual.idUP === up.id ? blocoAtual : null;
+                        if(!blocoValido) pendentes++;
 
                         let dataLanc;
                         if(dataCel instanceof Date) {
@@ -1869,7 +1941,7 @@
                         if(!dataLanc || isNaN(dataLanc.getTime())) { erros.push(`Linha ${i+1}: data inválida ("${dataTexto}").`); return; }
 
                         db.lancamentos.push({
-                            id: Date.now().toString() + '_' + i, idMaquina: maq.id, idUP: up.id, idBloco: blocoAtual.id,
+                            id: Date.now().toString() + '_' + i, idMaquina: maq.id, idUP: up.id, idBloco: blocoValido ? blocoValido.id : null,
                             data: dataLanc.toISOString(), arvores: arv, m3: arv * up.vmi, userId: currentUser
                         });
                         sucesso++;
@@ -1880,6 +1952,7 @@
                     const resumoColunas = `Data: coluna ${XLSX.utils.encode_col(colunas.data)} | Prefixo: coluna ${XLSX.utils.encode_col(colunas.prefixo)} | UP: coluna ${XLSX.utils.encode_col(colunas.up)} | Árvores: coluna ${XLSX.utils.encode_col(colunas.arvores)}`;
                     let resumo = `<p style="font-size:0.8rem; color:var(--text-muted);">Colunas identificadas automaticamente — ${resumoColunas}</p>`;
                     resumo += `<p style="margin-top:8px;"><b>${sucesso}</b> apontamento(s) importado(s) com sucesso.</p>`;
+                    if(pendentes > 0) resumo += `<p style="color:var(--info); margin-top:6px; font-size:0.85rem;">${pendentes} deles ficaram <b>sem bloco atribuído</b> (a UP da planilha não bate com o Bloco Atual da máquina) — atribua em Máquinas → Histórico.</p>`;
                     if(ignoradas > 0) resumo += `<p style="color:var(--text-muted); margin-top:6px; font-size:0.85rem;">${ignoradas} linha(s) em branco/irrelevantes ignoradas.</p>`;
                     if(erros.length > 0) resumo += `<p class="negative-text" style="margin-top:8px;">${erros.length} linha(s) com erro:</p><ul style="margin-left:20px; font-size:0.85rem;">${erros.slice(0,20).map(e=>`<li>${e}</li>`).join('')}</ul>`;
                     document.getElementById('importar-resultado').innerHTML = resumo;
