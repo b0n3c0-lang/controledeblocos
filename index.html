@@ -4,6 +4,17 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Controle de Blocos - FonTech</title>
+
+    <!-- PWA: manifest e ícones -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#256b46">
+    <link rel="icon" href="icon-192.png">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Controle Blocos">
+    <meta name="mobile-web-app-capable" content="yes">
+
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
@@ -20,6 +31,7 @@
             --text-muted: #718096;
             --danger: #e53e3e;
             --success: #38a169;
+            --info: #2b6cb0;
             --border: #e2e8f0;
             --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
         }
@@ -34,6 +46,7 @@
             --text-muted: #a0aec0;
             --border: #4a5568;
             --danger: #fc8181;
+            --info: #63b3ed;
             --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
         }
 
@@ -100,6 +113,7 @@
         .data-table th, .data-table td { padding: 12px; text-align: left; border-bottom: 1px solid var(--border); }
         .data-table th { color: var(--text-muted); text-transform: uppercase; font-size: 0.75rem; white-space: nowrap; }
         .negative-text { color: var(--danger) !important; font-weight: bold; }
+        .positive-text { color: var(--info) !important; font-weight: bold; }
         .progress-container { width: 100%; background: var(--border); border-radius: 10px; height: 10px; margin-top: 8px; overflow: hidden; }
         .progress-bar { height: 100%; background: var(--primary); border-radius: 10px; transition: width 0.4s; }
         .progress-bar.over { background: var(--danger); }
@@ -138,11 +152,9 @@
         .badge { padding: 3px 8px; border-radius: 10px; font-size: 0.7rem; color: white; display:inline-block; }
 
         @media (min-width: 960px) {
-            .sidebar { left: 0 !important; box-shadow: none; border-right: 1px solid var(--border); }
-            .overlay { display: none !important; }
-            .menu-btn { display: none; }
-            .sidebar-header .close-btn { display: none; }
-            main { margin-left: 280px; max-width: 1300px; padding: 30px 40px; }
+            /* No PC o menu continua sendo uma gaveta que abre/fecha pelo botão —
+               só deixamos o conteúdo principal um pouco mais largo pra aproveitar a tela. */
+            main { max-width: 1300px; padding: 30px 40px; }
         }
     </style>
 </head>
@@ -152,7 +164,17 @@
         <symbol id="icon-menu" viewBox="0 0 24 24"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></symbol>
         <symbol id="icon-dashboard" viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></symbol>
         <symbol id="icon-leaf" viewBox="0 0 24 24"><path d="M17 8C8 10 5.9 16.17 3.82 21.34l1.89.66l.95-2.3c3.49-2.78 8.1-4.7 14.34-5.38C21 10.9 19.98 8.97 17 8zM6.92 18.03c1.72-3.8 5.76-7.85 13.04-8.72c-.89 1.4-1.74 3.42-1.92 5.56C12.39 15.35 8.92 16.78 6.92 18.03z"/></symbol>
-        <symbol id="icon-harvester" viewBox="0 0 24 24"><path d="M2 17h20v2H2zm1.5-11h3V5h-3zm4 0h3V5h-3zm4 0h3V5h-3zm4 0h3V5h-3zM2 13h20v2H2zm3-5h14v3H5z"/></symbol>
+        <symbol id="icon-harvester" viewBox="0 0 24 24">
+            <rect x="1" y="17" width="15" height="3" rx="1.5"/>
+            <circle cx="3.5" cy="18.5" r="1.3"/>
+            <circle cx="8.5" cy="18.5" r="1.3"/>
+            <circle cx="13.5" cy="18.5" r="1.3"/>
+            <rect x="3" y="9.5" width="7.5" height="7.5" rx="1"/>
+            <path d="M9.5 11 L19 5 L20 6.5 L11 12.5 Z"/>
+            <path d="M18.3 3.8 L22.5 1.8 L21.7 3.7 L19.3 4.9 Z"/>
+            <path d="M18.7 5.4 L22.9 4.1 L22.3 5.9 L19.7 6.9 Z"/>
+            <rect x="4.3" y="10.8" width="2.2" height="2.2" rx="0.3" fill="var(--bg-card)"/>
+        </symbol>
         <symbol id="icon-up" viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 9h-2V7H8v5H6v2h2v5h2v-5h2v-2zm4 5h-2V7h2v10z"/></symbol>
         <symbol id="icon-export" viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7l7-7zM5 18v2h14v-2H5z"/></symbol>
         <symbol id="icon-import" viewBox="0 0 24 24"><path d="M5 20h14v-2H5v2zM19 9h-4V3H9v6H5l7 7 7-7z" transform="rotate(180 12 12)"/></symbol>
@@ -167,12 +189,39 @@
             <circle cx="7.3" cy="9.8" r="3.2"/>
             <circle cx="16.7" cy="9.8" r="3.2"/>
         </symbol>
+        <symbol id="icon-whatsapp" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="11" fill="#25D366"/>
+            <path fill="white" d="M6.6 10.8c1.4 2.8 3.8 5.2 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.5.6.6 0 1 .4 1 1v3.5c0 .6-.4 1-1 1C10.6 21.1 2.9 13.4 2.9 4.1c0-.6.4-1 1-1H7.4c.6 0 1 .4 1 1 0 1.2.2 2.4.6 3.5.1.4 0 .8-.2 1.1L6.6 10.8z"/>
+        </symbol>
+        <symbol id="icon-excel" viewBox="0 0 24 24">
+            <rect x="2" y="2" width="20" height="20" rx="2.5" fill="#1D6F42"/>
+            <g fill="white">
+                <rect x="5" y="5.5" width="14" height="2" rx="0.5"/>
+                <rect x="5" y="8.5" width="6" height="2" rx="0.5"/>
+                <rect x="12" y="8.5" width="7" height="2" rx="0.5"/>
+                <rect x="5" y="11.5" width="6" height="2" rx="0.5"/>
+                <rect x="12" y="11.5" width="7" height="2" rx="0.5"/>
+                <rect x="5" y="14.5" width="6" height="2" rx="0.5"/>
+                <rect x="12" y="14.5" width="7" height="2" rx="0.5"/>
+                <rect x="5" y="17.3" width="6" height="1.7" rx="0.5"/>
+                <rect x="12" y="17.3" width="7" height="1.7" rx="0.5"/>
+            </g>
+        </symbol>
+        <symbol id="icon-pdf" viewBox="0 0 24 24">
+            <path fill="#D93025" d="M6 2h9l5 5v13a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z"/>
+            <path fill="#a52519" d="M15 2v5h5z"/>
+            <text x="12" y="17.5" font-size="6.3" font-family="Arial, sans-serif" font-weight="bold" fill="white" text-anchor="middle">PDF</text>
+        </symbol>
     </svg>
 
     <header>
         <div class="header-left">
             <button class="menu-btn" onclick="toggleSidebar()"><svg width="26" height="26" fill="white"><use href="#icon-menu"></use></svg></button>
-            <svg width="26" height="26" fill="white"><use href="#icon-eucalipto"></use></svg>
+            <div style="display:flex; align-items:center; gap:2px;">
+                <svg width="18" height="18" fill="white"><use href="#icon-eucalipto"></use></svg>
+                <svg width="18" height="18" fill="white"><use href="#icon-eucalipto"></use></svg>
+                <svg width="18" height="18" fill="white"><use href="#icon-eucalipto"></use></svg>
+            </div>
             <h2>Controle de Blocos</h2>
         </div>
         <div class="header-right">
@@ -188,7 +237,11 @@
     <nav class="sidebar" id="sidebar">
         <div class="sidebar-header">
             <div class="brand">
-                <svg width="24" height="24"><use href="#icon-eucalipto"></use></svg>
+                <div style="display:flex; align-items:center; gap:2px;">
+                    <svg width="16" height="16"><use href="#icon-eucalipto"></use></svg>
+                    <svg width="16" height="16"><use href="#icon-eucalipto"></use></svg>
+                    <svg width="16" height="16"><use href="#icon-eucalipto"></use></svg>
+                </div>
                 <h2>Controle</h2>
             </div>
             <button class="close-btn" onclick="toggleSidebar()"><svg width="24" height="24" fill="currentColor"><use href="#icon-close"></use></svg></button>
@@ -217,7 +270,7 @@
             <div class="card luna-box" style="margin-bottom: 20px;">
                 <div class="luna-icon"><svg><use href="#icon-luna"></use></svg></div>
                 <div class="luna-text" id="luna-insights">
-                    <h4>Assistente Luna 🌙</h4>
+                    <h4>Assistente Luna</h4>
                     <p>Olá, Fontinelle! Analisando os dados da operação para te dar o raio-x exato...</p>
                 </div>
             </div>
@@ -243,8 +296,18 @@
             </div>
 
             <div class="card">
-                <h3>Resumo de Blocos Ativos</h3>
-                <div id="dash-blocos-ativos">Nenhum bloco ativo no momento.</div>
+                <h3>Blocos em Colheita</h3>
+                <div id="dash-blocos-ativos">Nenhum bloco em colheita no momento.</div>
+            </div>
+
+            <div class="card">
+                <h3>Blocos Aguardando Corte</h3>
+                <div id="dash-blocos-aguardando">Nenhum bloco aguardando.</div>
+            </div>
+
+            <div class="card">
+                <h3>Blocos Fechados Recentemente</h3>
+                <div id="dash-blocos-fechados">Nenhum bloco fechado recentemente.</div>
             </div>
         </section>
 
@@ -276,6 +339,10 @@
                     </div>
 
                     <div class="flex-row">
+                        <div class="form-group">
+                            <label>Data do Apontamento</label>
+                            <input type="date" class="form-control" id="lan-data" required>
+                        </div>
                         <div class="form-group">
                             <label>UP Detectada Automaticamente</label>
                             <input type="text" class="form-control" id="lan-up-detectada" readonly style="background:var(--border); cursor:not-allowed;" placeholder="Selecione o bloco acima...">
@@ -314,7 +381,7 @@
                 </h3>
                 <div style="overflow-x: auto;">
                     <table class="data-table">
-                        <thead><tr><th>Prefixo/Nome</th><th>Status</th><th>Bloco Atual</th><th>Árvores Acum.</th><th>M³ Acum.</th><th style="min-width:280px;">Ações</th></tr></thead>
+                        <thead><tr><th>Prefixo</th><th>Nome</th><th>Status</th><th>Bloco Atual</th><th>Árvores Acum.</th><th>M³ Acum.</th><th style="min-width:280px;">Ações</th></tr></thead>
                         <tbody id="tb-maquinas"></tbody>
                     </table>
                 </div>
@@ -403,6 +470,7 @@
                 <h3 style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
                     <span id="bd-title">Bloco</span>
                     <div style="display:flex; gap:8px;">
+                        <button class="btn btn-primary btn-sm" id="bd-btn-iniciar" style="display:none;" onclick="iniciarColheitaBloco(blocoSelecionado.id)">Iniciar Colheita</button>
                         <button class="btn btn-danger btn-sm" onclick="finalizarBlocoAtualDetail()">Finalizar Bloco</button>
                         <button class="btn back-btn" onclick="voltarParaUPDetail()">⬅ Voltar para UP</button>
                     </div>
@@ -436,8 +504,10 @@
             <div class="card">
                 <h3>Importar Apontamentos (Excel/CSV)</h3>
                 <p style="font-size:0.85rem; color:var(--text-muted); margin: 10px 0 15px;">
-                    A planilha deve ter as colunas <b>Máquina</b>, <b>Bloco</b> e <b>Árvores</b> (opcional: <b>Data</b> no formato dd/mm/aaaa).
-                    A máquina e o bloco precisam já estar cadastrados no sistema com o mesmo nome, e o bloco precisa estar com status "Colhendo".
+                    O sistema lê a <b>1ª linha da planilha como cabeçalho</b> e procura sozinho as colunas de
+                    Data, Prefixo/Máquina, UP e Árvores/Produção (não importa a ordem ou a posição — o resto do conteúdo é ignorado).<br><br>
+                    Cada máquina precisa ter um <b>Bloco Atual</b> definido (em Máquinas → Trocar Bloco) — o lançamento é criado nesse bloco,
+                    desde que ele pertença à UP indicada na planilha. Linhas em branco são ignoradas; linhas com dados que não batem (máquina, UP ou bloco) aparecem como erro depois de processar.
                 </p>
                 <input type="file" class="form-control" id="file-importar" accept=".xlsx,.xls,.csv">
                 <button class="btn btn-primary" style="margin-top:15px;" onclick="processarImportacao()"><svg width="18" height="18" fill="white"><use href="#icon-import"></use></svg> Processar Planilha</button>
@@ -479,9 +549,9 @@
                     <table class="data-table" id="exp-preview-tabela"></table>
                 </div>
                 <div id="exp-preview-botoes" style="display:flex; gap:10px; flex-wrap:wrap; margin-top:15px;">
-                    <button class="btn btn-primary" onclick="exportarExcel()">📊 Excel (.xlsx)</button>
-                    <button class="btn btn-danger" onclick="exportarPDF()">📄 PDF</button>
-                    <button class="btn" style="background:#25D366; color:white;" onclick="exportarWhatsapp()">💬 WhatsApp</button>
+                    <button class="btn btn-primary" onclick="exportarExcel()"><svg width="18" height="18"><use href="#icon-excel"></use></svg> Excel (.xlsx)</button>
+                    <button class="btn btn-danger" onclick="exportarPDF()"><svg width="18" height="18"><use href="#icon-pdf"></use></svg> PDF</button>
+                    <button class="btn" style="background:#25D366; color:white;" onclick="exportarWhatsapp()"><svg width="18" height="18"><use href="#icon-whatsapp"></use></svg> WhatsApp</button>
                 </div>
             </div>
         </section>
@@ -505,6 +575,18 @@
                     <div class="form-group"><input type="text" class="form-control" id="cad-user-id" placeholder="ID ou Nome"></div>
                     <div class="form-group"><input type="password" class="form-control" id="cad-user-pass" placeholder="Senha"></div>
                     <button class="btn btn-primary" onclick="cadastrarAdmin()">Cadastrar Admin</button>
+                </div>
+                <div class="card">
+                    <h3>Backup Local</h3>
+                    <p style="font-size: 0.8rem; margin-bottom: 10px; color: var(--text-muted);">
+                        Salve uma cópia de tudo (UPs, blocos, máquinas e lançamentos) num arquivo. Útil pra trocar de celular/PC ou manter uma cópia de segurança.
+                    </p>
+                    <button class="btn btn-primary" onclick="exportarBackup()" style="margin-bottom:12px;"><svg width="18" height="18" fill="white"><use href="#icon-export"></use></svg> Exportar Backup (JSON)</button>
+                    <div style="border-top:1px solid var(--border); padding-top:12px;">
+                        <label style="display:block; font-size:0.85rem; font-weight:600; color:var(--text-muted); margin-bottom:6px;">Restaurar de um backup</label>
+                        <input type="file" class="form-control" id="input-importar-backup" accept=".json" onchange="importarBackup(event)">
+                        <p style="font-size:0.75rem; color:var(--danger); margin-top:6px;">Atenção: isso substitui TODOS os dados atuais deste aparelho pelos do arquivo.</p>
+                    </div>
                 </div>
             </div>
         </section>
@@ -537,6 +619,7 @@
             <div class="form-group"><label>Hectares</label><input type="number" step="0.01" class="form-control" id="cad-bloco-area"></div>
             <div class="form-group"><label>Status</label>
                 <select class="form-control" id="cad-bloco-status">
+                    <option value="Aguardando">Aguardando</option>
                     <option value="Colhendo">Colhendo</option>
                     <option value="Fechado">Fechado</option>
                 </select>
@@ -548,7 +631,8 @@
     <div class="modal" id="modal-maquina">
         <div class="modal-content">
             <div class="modal-header"><h3 id="modal-maquina-titulo">Cadastrar Máquina</h3><button class="close-btn" onclick="closeModal('modal-maquina')"><svg width="24" height="24" fill="currentColor"><use href="#icon-close"></use></svg></button></div>
-            <div class="form-group"><label>Prefixo / Nome</label><input type="text" class="form-control" id="cad-maq-nome" style="text-transform: uppercase;"></div>
+            <div class="form-group"><label>Prefixo (número/código curto)</label><input type="text" class="form-control" id="cad-maq-prefixo" placeholder="Ex: 672" style="text-transform: uppercase;"></div>
+            <div class="form-group"><label>Nome</label><input type="text" class="form-control" id="cad-maq-nome" placeholder="Ex: Sertaneja" style="text-transform: uppercase;"></div>
             <button class="btn btn-primary" style="width:100%; justify-content:center;" onclick="salvarMaquina()">Salvar Máquina</button>
         </div>
     </div>
@@ -608,10 +692,22 @@
             db.maquinas.forEach(m => {
                 if(!m.status) m.status = 'Ativa';
                 if(m.blocoAtualId === undefined) m.blocoAtualId = null;
+                if(m.prefixo === undefined) m.prefixo = '';
             });
             saveData();
             checkAuth();
             renderAll();
+            definirDataLancamentoHoje();
+        }
+        // Preenche o campo de data do lançamento com a data de hoje
+        function definirDataLancamentoHoje() {
+            const campo = document.getElementById('lan-data');
+            if(!campo) return;
+            const hoje = new Date();
+            const yyyy = hoje.getFullYear();
+            const mm = String(hoje.getMonth() + 1).padStart(2, '0');
+            const dd = String(hoje.getDate()).padStart(2, '0');
+            campo.value = `${yyyy}-${mm}-${dd}`;
         }
         function saveData() { localStorage.setItem('fontech_blocos_db', JSON.stringify(db)); }
 
@@ -687,6 +783,19 @@
             else { body.setAttribute('data-theme', 'dark'); }
         }
 
+        // Formata número no padrão brasileiro: 2345.46 -> "2.345,46"
+        function formatarNumero(valor, casas = 2) {
+            const n = Number(valor);
+            if(isNaN(n)) return (0).toLocaleString('pt-BR', { minimumFractionDigits: casas, maximumFractionDigits: casas });
+            return n.toLocaleString('pt-BR', { minimumFractionDigits: casas, maximumFractionDigits: casas });
+        }
+        // Lê um número digitado aceitando tanto "0.10" quanto "0,10" (evita o bug clássico
+        // de vírgula virar parte inválida e o parseFloat truncar o valor sem avisar)
+        function paraNumero(texto) {
+            if(typeof texto === 'number') return texto;
+            return parseFloat(String(texto).trim().replace(',', '.'));
+        }
+
         function calcUP(up) {
             const arvTotais = up.area * up.arvHa;
             const m3Totais = arvTotais * up.vmi;
@@ -717,6 +826,23 @@
             return b || null;
         }
 
+        // Formata como "672 - SERTANEJA" quando tem prefixo, ou só o nome quando não tem
+        function formatarMaquina(m) {
+            if(!m) return '-';
+            return m.prefixo ? `${m.prefixo} - ${m.nome}` : m.nome;
+        }
+        // Acha a máquina digitando o prefixo, o nome, ou o "PREFIXO - NOME" completo
+        function encontrarMaquinaPorTexto(texto) {
+            const t = (texto || '').trim().toUpperCase();
+            if(!t) return null;
+            let m = db.maquinas.find(x => formatarMaquina(x).toUpperCase() === t);
+            if(m) return m;
+            m = db.maquinas.find(x => x.prefixo && x.prefixo.toUpperCase() === t);
+            if(m) return m;
+            m = db.maquinas.find(x => x.nome.toUpperCase() === t);
+            return m || null;
+        }
+
         // ---------- CRUD de UPs ----------
         function abrirModalUP(id = null) {
             if(!requireAuth()) return;
@@ -731,10 +857,11 @@
         }
         function salvarUP() {
             const n = document.getElementById('cad-up-nome').value.trim();
-            const v = parseFloat(document.getElementById('cad-up-vmi').value);
-            const a = parseFloat(document.getElementById('cad-up-arvha').value);
-            const area = parseFloat(document.getElementById('cad-up-area').value);
+            const v = paraNumero(document.getElementById('cad-up-vmi').value);
+            const a = paraNumero(document.getElementById('cad-up-arvha').value);
+            const area = paraNumero(document.getElementById('cad-up-area').value);
             if(!n || isNaN(v) || isNaN(a) || isNaN(area)) return alert("Preencha tudo corretamente.");
+            if(v <= 0 || a <= 0 || area <= 0) return alert("VMi, Árvores/Ha e Área precisam ser maiores que zero.");
 
             if(upEditId) {
                 const u = db.ups.find(x => x.id === upEditId);
@@ -781,7 +908,7 @@
                 tr.onclick = () => abrirUPDetail(u.id);
                 tr.innerHTML = `
                     <td><b>${u.nome}</b></td><td>${u.vmi}</td><td>${u.arvHa}</td><td>${u.area}</td>
-                    <td>${calc.arvTotais.toFixed(0)}</td><td>${calc.m3Totais.toFixed(2)}</td>
+                    <td>${formatarNumero(calc.arvTotais, 0)}</td><td>${formatarNumero(calc.m3Totais, 2)}</td>
                     <td class="row-actions" onclick="event.stopPropagation();">
                         <button class="btn btn-primary btn-sm" onclick="abrirUPDetail('${u.id}')">Ver (${qtdBlocos})</button>
                         <button class="btn back-btn btn-sm" onclick="abrirModalUP('${u.id}')">Editar</button>
@@ -806,7 +933,7 @@
             document.getElementById('upd-vmi').innerText = upSelecionadaParaBlocos.vmi;
             document.getElementById('upd-arvha').innerText = upSelecionadaParaBlocos.arvHa;
             document.getElementById('upd-area').innerText = upSelecionadaParaBlocos.area;
-            document.getElementById('upd-m3total').innerText = calc.m3Totais.toFixed(2);
+            document.getElementById('upd-m3total').innerText = formatarNumero(calc.m3Totais, 2);
 
             renderBlocos();
             renderHistoricoUP();
@@ -827,9 +954,10 @@
         }
         function salvarBloco() {
             const n = document.getElementById('cad-bloco-nome').value.trim();
-            const a = parseFloat(document.getElementById('cad-bloco-area').value);
+            const a = paraNumero(document.getElementById('cad-bloco-area').value);
             const status = document.getElementById('cad-bloco-status').value;
             if(!n || isNaN(a)) return alert("Preencha os campos.");
+            if(a <= 0) return alert("A área precisa ser maior que zero.");
 
             if(blocoEditId) {
                 const b = db.blocos.find(x => x.id === blocoEditId);
@@ -865,6 +993,19 @@
             if(b.status === 'Fechado') return alert('Esse bloco já está fechado.');
             if(!confirm('Deseja realmente FECHAR o bloco ' + b.nome + '?')) return;
             b.status = 'Fechado';
+            b.dataFechamento = new Date().toISOString();
+            saveData();
+            renderBlocos(); renderUPs();
+            renderBlocoDetail();
+            atualizarDashboard();
+        }
+        function iniciarColheitaBloco(id) {
+            if(!requireAuth()) return;
+            const b = db.blocos.find(x => x.id === id);
+            if(!b) return;
+            if(b.status !== 'Aguardando') return alert('Esse bloco não está Aguardando.');
+            if(!confirm('Iniciar colheita do bloco ' + b.nome + '?')) return;
+            b.status = 'Colhendo';
             saveData();
             renderBlocos(); renderUPs();
             renderBlocoDetail();
@@ -894,12 +1035,13 @@
                 tr.onclick = () => abrirBlocoDetail(b.id);
                 tr.innerHTML = `
                     <td>${b.nome}</td>
-                    <td><span class="badge" style="background:${b.status==='Fechado'?'var(--danger)':'var(--primary)'};">${b.status}</span></td>
+                    <td><span class="badge" style="background:${b.status==='Fechado'?'var(--danger)':b.status==='Aguardando'?'var(--text-muted)':'var(--primary)'};">${b.status}</span></td>
                     <td>${b.area}</td>
-                    <td>${c.planArv.toFixed(0)} / ${c.planM3.toFixed(2)}</td>
-                    <td>${c.realizArv.toFixed(0)} / ${c.realizM3.toFixed(2)}</td>
-                    <td class="${isNeg ? 'negative-text' : ''}">${c.saldoArv.toFixed(0)} / ${c.saldoM3.toFixed(2)}</td>
+                    <td>${formatarNumero(c.planArv, 0)} / ${formatarNumero(c.planM3, 2)}</td>
+                    <td>${formatarNumero(c.realizArv, 0)} / ${formatarNumero(c.realizM3, 2)}</td>
+                    <td class="${isNeg ? 'negative-text' : 'positive-text'}">${formatarNumero(c.saldoArv, 0)} / ${formatarNumero(c.saldoM3, 2)}</td>
                     <td class="row-actions" onclick="event.stopPropagation();">
+                        ${b.status==='Aguardando' ? `<button class="btn btn-primary btn-sm" onclick="iniciarColheitaBloco('${b.id}')">Iniciar Colheita</button>` : ''}
                         <button class="btn back-btn btn-sm" onclick="abrirModalBloco('${b.id}')">Editar</button>
                         <button class="btn btn-danger btn-sm" onclick="excluirBloco('${b.id}')">Excluir</button>
                     </td>
@@ -922,7 +1064,7 @@
                 const m = db.maquinas.find(x => x.id === l.idMaquina);
                 const d = new Date(l.data).toLocaleDateString();
                 const tr = document.createElement('tr');
-                tr.innerHTML = `<td>${d}</td><td>${b ? b.nome : '-'}</td><td>${m ? m.nome : '-'}</td><td>${l.arvores}</td><td>${l.m3.toFixed(2)}</td>
+                tr.innerHTML = `<td>${d}</td><td>${b ? b.nome : '-'}</td><td>${formatarMaquina(m)}</td><td>${l.arvores}</td><td>${formatarNumero(l.m3, 2)}</td>
                     <td class="row-actions">
                         <button class="btn back-btn btn-sm" onclick="abrirModalEditarLancamento('${l.id}')">Editar</button>
                         <button class="btn btn-danger btn-sm" onclick="excluirLancamento('${l.id}')">Excluir</button>
@@ -947,13 +1089,14 @@
             const c = calcBloco(blocoSelecionado);
             document.getElementById('bd-title').innerText = 'Bloco ' + blocoSelecionado.nome + ' (UP ' + c.up.nome + ')';
             document.getElementById('bd-status').innerText = blocoSelecionado.status;
+            document.getElementById('bd-btn-iniciar').style.display = blocoSelecionado.status === 'Aguardando' ? 'inline-flex' : 'none';
             document.getElementById('bd-area').innerText = blocoSelecionado.area;
-            document.getElementById('bd-plan').innerText = c.planArv.toFixed(0) + ' árv / ' + c.planM3.toFixed(2) + ' m³';
-            document.getElementById('bd-realiz').innerText = c.realizArv.toFixed(0) + ' árv / ' + c.realizM3.toFixed(2) + ' m³';
+            document.getElementById('bd-plan').innerText = formatarNumero(c.planArv, 0) + ' árv / ' + formatarNumero(c.planM3, 2) + ' m³';
+            document.getElementById('bd-realiz').innerText = formatarNumero(c.realizArv, 0) + ' árv / ' + formatarNumero(c.realizM3, 2) + ' m³';
 
             const saldoEl = document.getElementById('bd-saldo');
-            saldoEl.innerText = c.saldoM3.toFixed(2) + ' m³';
-            saldoEl.className = c.saldoM3 < 0 ? 'negative-text' : '';
+            saldoEl.innerText = formatarNumero(c.saldoM3, 2) + ' m³';
+            saldoEl.className = c.saldoM3 < 0 ? 'negative-text' : 'positive-text';
             document.getElementById('bd-pct').innerText = ' (' + c.perColhido.toFixed(1) + '% colhido)';
 
             const bar = document.getElementById('bd-bar');
@@ -969,7 +1112,7 @@
                     const m = db.maquinas.find(x => x.id === l.idMaquina);
                     const d = new Date(l.data).toLocaleDateString();
                     const tr = document.createElement('tr');
-                    tr.innerHTML = `<td>${d}</td><td>${m ? m.nome : '-'}</td><td>${l.arvores}</td><td>${l.m3.toFixed(2)}</td>
+                    tr.innerHTML = `<td>${d}</td><td>${formatarMaquina(m)}</td><td>${l.arvores}</td><td>${formatarNumero(l.m3, 2)}</td>
                         <td class="row-actions">
                             <button class="btn back-btn btn-sm" onclick="abrirModalEditarLancamento('${l.id}')">Editar</button>
                             <button class="btn btn-danger btn-sm" onclick="excluirLancamento('${l.id}')">Excluir</button>
@@ -988,21 +1131,27 @@
             if(!requireAuth()) return;
             maquinaEditId = id;
             const m = id ? db.maquinas.find(x => x.id === id) : null;
+            document.getElementById('cad-maq-prefixo').value = m ? (m.prefixo || '') : '';
             document.getElementById('cad-maq-nome').value = m ? m.nome : '';
             document.getElementById('modal-maquina-titulo').innerText = m ? 'Editar Máquina' : 'Cadastrar Máquina';
             document.getElementById('modal-maquina').classList.add('active');
         }
         function salvarMaquina() {
+            const prefixo = document.getElementById('cad-maq-prefixo').value.trim().toUpperCase();
             const n = document.getElementById('cad-maq-nome').value.trim().toUpperCase();
-            if(!n) return alert("Informe o prefixo/nome da máquina.");
-            const existente = db.maquinas.find(m => m.nome === n && m.id !== maquinaEditId);
-            if(existente) return alert("Já existe uma máquina com esse nome.");
+            if(!n) return alert("Informe o nome da máquina.");
+            const existenteNome = db.maquinas.find(m => m.nome === n && m.id !== maquinaEditId);
+            if(existenteNome) return alert("Já existe uma máquina com esse nome.");
+            if(prefixo) {
+                const existentePrefixo = db.maquinas.find(m => m.prefixo && m.prefixo.toUpperCase() === prefixo && m.id !== maquinaEditId);
+                if(existentePrefixo) return alert("Já existe uma máquina com esse prefixo.");
+            }
 
             if(maquinaEditId) {
                 const m = db.maquinas.find(x => x.id === maquinaEditId);
-                if(m) m.nome = n;
+                if(m) { m.nome = n; m.prefixo = prefixo; }
             } else {
-                db.maquinas.push({ id: Date.now().toString(), nome: n, status: 'Ativa', blocoAtualId: null });
+                db.maquinas.push({ id: Date.now().toString(), prefixo: prefixo, nome: n, status: 'Ativa', blocoAtualId: null });
             }
             saveData(); closeModal('modal-maquina'); renderMaquinas();
             maquinaEditId = null;
@@ -1012,7 +1161,7 @@
             const m = db.maquinas.find(x => x.id === id);
             if(!m) return;
             const qtdLanc = db.lancamentos.filter(l => l.idMaquina === id).length;
-            let msg = `Deseja realmente excluir a máquina ${m.nome}?`;
+            let msg = `Deseja realmente excluir a máquina ${formatarMaquina(m)}?`;
             if(qtdLanc > 0) msg += ` Ela possui ${qtdLanc} apontamento(s) no histórico, que ficarão sem máquina vinculada. Se preferir manter o histórico, use "Inativar" em vez de excluir.`;
             if(!confirm(msg)) return;
             db.maquinas = db.maquinas.filter(x => x.id !== id);
@@ -1023,7 +1172,7 @@
             const m = db.maquinas.find(x => x.id === id);
             if(!m) return;
             const novoStatus = m.status === 'Inativa' ? 'Ativa' : 'Inativa';
-            if(!confirm(`Deseja marcar a máquina ${m.nome} como ${novoStatus}?`)) return;
+            if(!confirm(`Deseja marcar a máquina ${formatarMaquina(m)} como ${novoStatus}?`)) return;
             m.status = novoStatus;
             saveData(); renderMaquinas();
         }
@@ -1032,7 +1181,7 @@
             trocaMaquinaId = idMaquina;
             const m = db.maquinas.find(x => x.id === idMaquina);
             if(!m) return;
-            document.getElementById('troca-maquina-nome').innerText = m.nome;
+            document.getElementById('troca-maquina-nome').innerText = formatarMaquina(m);
             const ativos = db.blocos.filter(b => b.status === 'Colhendo');
             const sel = document.getElementById('troca-bloco-select');
             sel.innerHTML = '<option value="">— Nenhum —</option>' + ativos.map(b => {
@@ -1054,7 +1203,7 @@
         function renderMaquinas() {
             const tb = document.getElementById('tb-maquinas'); tb.innerHTML = '';
             if(db.maquinas.length === 0) {
-                tb.innerHTML = `<tr><td colspan="6" style="text-align:center; color:var(--text-muted);">Nenhuma máquina cadastrada.</td></tr>`;
+                tb.innerHTML = `<tr><td colspan="7" style="text-align:center; color:var(--text-muted);">Nenhuma máquina cadastrada.</td></tr>`;
                 return;
             }
             db.maquinas.forEach(m => {
@@ -1066,10 +1215,11 @@
                 const inativa = m.status === 'Inativa';
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
-                    <td><b>${m.nome}</b></td>
+                    <td><b>${m.prefixo || '-'}</b></td>
+                    <td>${m.nome}</td>
                     <td><span class="badge" style="background:${inativa ? 'var(--text-muted)' : 'var(--primary)'};">${m.status}</span></td>
                     <td>${blocoAtual ? `Bloco ${blocoAtual.nome} <span style="color:var(--text-muted); font-size:0.8rem;">(UP ${upAtual ? upAtual.nome : '-'})</span>` : '<span style="color:var(--text-muted);">-</span>'}</td>
-                    <td>${totArv.toFixed(0)}</td><td>${totM3.toFixed(2)}</td>
+                    <td>${formatarNumero(totArv, 0)}</td><td>${formatarNumero(totM3, 2)}</td>
                     <td class="row-actions">
                         <button class="btn back-btn btn-sm" onclick="abrirHistMaquinaView('${m.id}')">Histórico</button>
                         <button class="btn back-btn btn-sm" onclick="abrirModalTrocarBloco('${m.id}')">Trocar Bloco</button>
@@ -1091,7 +1241,7 @@
             if(!maquinaSelecionada) return;
             const m = db.maquinas.find(x => x.id === maquinaSelecionada);
             if(!m) return;
-            document.getElementById('hist-maq-title-view').innerText = 'Histórico da Máquina: ' + m.nome;
+            document.getElementById('hist-maq-title-view').innerText = 'Histórico da Máquina: ' + formatarMaquina(m);
             const tb = document.getElementById('tb-hist-maquina-view'); tb.innerHTML = '';
 
             const lancs = db.lancamentos.filter(l => l.idMaquina === maquinaSelecionada).sort((a,b) => new Date(b.data) - new Date(a.data));
@@ -1101,16 +1251,26 @@
                 lancs.forEach(l => {
                     const b = db.blocos.find(x => x.id === l.idBloco);
                     const u = db.ups.find(x => x.id === l.idUP);
-                    if(!b || !u) return;
+                    if(!u) return;
+                    const d = new Date(l.data).toLocaleDateString();
+                    const tr = document.createElement('tr');
+
+                    if(!b) {
+                        tr.innerHTML = `<td>${d}</td><td>${u.nome}</td><td colspan="2"><span class="badge" style="background:var(--info);">Pendente de Bloco</span></td><td>${formatarNumero(l.m3, 2)}</td><td>-</td>
+                            <td class="row-actions">
+                                <button class="btn btn-primary btn-sm" onclick="abrirModalEditarLancamento('${l.id}')">Atribuir Bloco</button>
+                                <button class="btn btn-danger btn-sm" onclick="excluirLancamento('${l.id}')">Excluir</button>
+                            </td>`;
+                        tb.appendChild(tr);
+                        return;
+                    }
 
                     const c = calcBloco(b);
                     const pctParticipacao = c.realizArv > 0 ? (l.arvores / c.realizArv) : 0;
                     const saldoM3Resp = c.saldoM3 * pctParticipacao;
-                    const respText = saldoM3Resp < 0 ? `<span class="negative-text">${saldoM3Resp.toFixed(2)} m³</span>` : `+${saldoM3Resp.toFixed(2)} m³`;
+                    const respText = saldoM3Resp < 0 ? `<span class="negative-text">${formatarNumero(saldoM3Resp, 2)} m³</span>` : `<span class="positive-text">+${formatarNumero(saldoM3Resp, 2)} m³</span>`;
 
-                    const d = new Date(l.data).toLocaleDateString();
-                    const tr = document.createElement('tr');
-                    tr.innerHTML = `<td>${d}</td><td>${u.nome}</td><td>${b.nome}</td><td>${l.arvores}</td><td>${l.m3.toFixed(2)}</td><td>${respText}</td>
+                    tr.innerHTML = `<td>${d}</td><td>${u.nome}</td><td>${b.nome}</td><td>${l.arvores}</td><td>${formatarNumero(l.m3, 2)}</td><td>${respText}</td>
                         <td class="row-actions">
                             <button class="btn back-btn btn-sm" onclick="abrirModalEditarLancamento('${l.id}')">Editar</button>
                             <button class="btn btn-danger btn-sm" onclick="excluirLancamento('${l.id}')">Excluir</button>
@@ -1128,24 +1288,26 @@
             const box = document.getElementById('sugestoes-maquina');
             const filtro = (valor || '').trim().toUpperCase();
             const ativas = db.maquinas.filter(m => m.status !== 'Inativa');
-            const itens = filtro ? ativas.filter(m => m.nome.includes(filtro)) : ativas;
+            const itens = filtro ? ativas.filter(m =>
+                (m.prefixo && m.prefixo.toUpperCase().includes(filtro)) || m.nome.toUpperCase().includes(filtro)
+            ) : ativas;
 
             if(ativas.length === 0) {
                 box.innerHTML = `<div class="autocomplete-empty">Nenhuma máquina ativa cadastrada. Cadastre em "Máquinas" no menu.</div>`;
             } else if(itens.length === 0) {
                 box.innerHTML = `<div class="autocomplete-empty">Nenhuma máquina encontrada para "${valor}".</div>`;
             } else {
-                box.innerHTML = itens.map(m => `<div class="autocomplete-item" onclick="selecionarMaquina('${m.id}')">${m.nome}</div>`).join('');
+                box.innerHTML = itens.map(m => `<div class="autocomplete-item" onclick="selecionarMaquina('${m.id}')">${formatarMaquina(m)}</div>`).join('');
             }
             box.classList.add('active');
 
-            const exata = ativas.find(m => m.nome === filtro);
-            if(exata) mostrarDicaBlocoMaquina(exata.id); else esconderDicaBlocoMaquina();
+            const exata = encontrarMaquinaPorTexto(filtro);
+            if(exata && ativas.includes(exata)) mostrarDicaBlocoMaquina(exata.id); else esconderDicaBlocoMaquina();
         }
         function selecionarMaquina(id) {
             const m = db.maquinas.find(x => x.id === id);
             if(!m) return;
-            document.getElementById('lan-maquina').value = m.nome;
+            document.getElementById('lan-maquina').value = formatarMaquina(m);
             document.getElementById('sugestoes-maquina').classList.remove('active');
             mostrarDicaBlocoMaquina(id);
         }
@@ -1212,15 +1374,15 @@
                     const c = calcBloco(bloco);
                     document.getElementById('lan-bloco-info').style.display = 'block';
                     document.getElementById('lan-info-vmi').innerText = up.vmi;
-                    document.getElementById('lan-info-plan-arv').innerText = c.planArv.toFixed(0);
-                    document.getElementById('lan-info-plan-m3').innerText = c.planM3.toFixed(2);
+                    document.getElementById('lan-info-plan-arv').innerText = formatarNumero(c.planArv, 0);
+                    document.getElementById('lan-info-plan-m3').innerText = formatarNumero(c.planM3, 2);
 
                     const rArv = document.getElementById('lan-info-rest-arv');
                     const rM3 = document.getElementById('lan-info-rest-m3');
-                    rArv.innerText = c.saldoArv.toFixed(0);
-                    rM3.innerText = c.saldoM3.toFixed(2);
-                    rArv.className = c.saldoArv < 0 ? 'negative-text' : '';
-                    rM3.className = c.saldoM3 < 0 ? 'negative-text' : '';
+                    rArv.innerText = formatarNumero(c.saldoArv, 0);
+                    rM3.innerText = formatarNumero(c.saldoM3, 2);
+                    rArv.className = c.saldoArv < 0 ? 'negative-text' : 'positive-text';
+                    rM3.className = c.saldoM3 < 0 ? 'negative-text' : 'positive-text';
 
                     const bar = document.getElementById('lan-info-bar');
                     bar.style.width = Math.min(c.perColhido, 100) + '%';
@@ -1235,12 +1397,12 @@
         // ---------- CRUD de Lançamentos ----------
         function salvarLancamento() {
             if(!requireAuth()) return;
-            const mNome = document.getElementById('lan-maquina').value.trim().toUpperCase();
             const bNome = document.getElementById('lan-bloco').value.trim();
             const arv = parseInt(document.getElementById('lan-arvores').value);
+            const dataDigitada = document.getElementById('lan-data').value;
 
-            const maq = db.maquinas.find(m => m.nome === mNome);
-            if(!maq) return alert("Máquina não encontrada. Cadastre-a primeiro em 'Máquinas'.");
+            const maq = encontrarMaquinaPorTexto(document.getElementById('lan-maquina').value);
+            if(!maq) return alert("Máquina não encontrada. Selecione uma opção da lista ou cadastre-a primeiro em 'Máquinas'.");
             if(maq.status === 'Inativa') return alert("Essa máquina está Inativa. Reative-a em 'Máquinas' para lançar apontamentos.");
 
             const bloco = db.blocos.find(b => b.nome.toUpperCase() === bNome.toUpperCase() && b.status === 'Colhendo');
@@ -1250,12 +1412,18 @@
             if(!up) return alert("UP associada não encontrada.");
 
             if(isNaN(arv) || arv <= 0) return alert("Informe uma quantidade de árvores válida.");
+            if(!dataDigitada) return alert("Informe a data do apontamento.");
 
             const m3 = arv * up.vmi;
 
+            // Usa a data escolhida, mas preserva a hora atual (ajuda a manter a ordem de quem lançou primeiro no dia)
+            const agora = new Date();
+            const [ano, mes, dia] = dataDigitada.split('-').map(Number);
+            const dataFinal = new Date(ano, mes - 1, dia, agora.getHours(), agora.getMinutes(), agora.getSeconds());
+
             db.lancamentos.push({
                 id: Date.now().toString(), idMaquina: maq.id, idUP: up.id, idBloco: bloco.id,
-                data: new Date().toISOString(), arvores: arv, m3: m3, userId: currentUser
+                data: dataFinal.toISOString(), arvores: arv, m3: m3, userId: currentUser
             });
             maq.blocoAtualId = bloco.id;
             saveData();
@@ -1264,6 +1432,7 @@
             document.getElementById('lan-bloco').value = '';
             document.getElementById('lan-up-detectada').value = '';
             document.getElementById('lan-bloco-info').style.display = 'none';
+            definirDataLancamentoHoje();
             esconderDicaBlocoMaquina();
 
             atualizarViewsAposLancamento();
@@ -1277,7 +1446,7 @@
             lancamentoEditId = id;
 
             document.getElementById('edit-lanc-maquina').innerHTML = db.maquinas.map(m =>
-                `<option value="${m.id}" ${m.id === l.idMaquina ? 'selected' : ''}>${m.nome}${m.status === 'Inativa' ? ' (inativa)' : ''}</option>`
+                `<option value="${m.id}" ${m.id === l.idMaquina ? 'selected' : ''}>${formatarMaquina(m)}${m.status === 'Inativa' ? ' (inativa)' : ''}</option>`
             ).join('');
             document.getElementById('edit-lanc-bloco').innerHTML = db.blocos.map(b => {
                 const up = db.ups.find(u => u.id === b.idUP);
@@ -1341,6 +1510,7 @@
             if(bloco) {
                 if(confirm("Deseja realmente FECHAR o bloco " + bloco.nome + "?")) {
                     bloco.status = 'Fechado';
+                    bloco.dataFechamento = new Date().toISOString();
                     saveData();
                     document.getElementById('lan-bloco').value = '';
                     document.getElementById('lan-up-detectada').value = '';
@@ -1361,11 +1531,11 @@
             const m3Hj = lancHj.reduce((s,l)=>s+l.m3, 0);
 
             document.getElementById('dash-arv-diaria').innerText = arvHj;
-            document.getElementById('dash-m3-diaria').innerText = m3Hj.toFixed(2);
+            document.getElementById('dash-m3-diaria').innerText = formatarNumero(m3Hj, 2);
 
             const arvTot = db.lancamentos.reduce((s,l)=>s+l.arvores, 0);
             const m3Tot = db.lancamentos.reduce((s,l)=>s+l.m3, 0);
-            document.getElementById('dash-m3-total').innerText = m3Tot.toFixed(2);
+            document.getElementById('dash-m3-total').innerText = formatarNumero(m3Tot, 2);
 
             // Agrupa por dia (chave AAAA-MM-DD) para poder ordenar cronologicamente de verdade
             const porDia = {};
@@ -1377,7 +1547,7 @@
             });
             const chavesOrdenadas = Object.keys(porDia).sort();
             const mediaM3 = chavesOrdenadas.length > 0 ? (m3Tot / chavesOrdenadas.length) : 0;
-            document.getElementById('dash-media-diaria').innerText = mediaM3.toFixed(2);
+            document.getElementById('dash-media-diaria').innerText = formatarNumero(mediaM3, 2);
 
             const bAtivos = db.blocos.filter(b => b.status === 'Colhendo');
             const boxBAtivos = document.getElementById('dash-blocos-ativos');
@@ -1391,20 +1561,52 @@
                                 <strong style="cursor:pointer; color:var(--primary);" onclick="abrirUPDetail('${c.up.id}')">${c.up.nome} - Bloco ${b.nome}</strong>
                                 <button class="btn btn-danger btn-sm" onclick="finalizarBlocoPorId('${b.id}')">Finalizar</button>
                             </div>
-                            <span style="font-size:0.8rem;">Colhido: ${c.perColhido.toFixed(1)}% | Saldo: <span class="${isNeg?'negative-text':''}">${c.saldoM3.toFixed(2)} m³</span></span>
+                            <span style="font-size:0.8rem;">Colhido: ${c.perColhido.toFixed(1)}% | Saldo: <span class="${isNeg?'negative-text':'positive-text'}">${formatarNumero(c.saldoM3, 2)} m³</span></span>
                             <div class="progress-container"><div class="progress-bar ${c.perColhido>=100?'over':''}" style="width:${Math.min(c.perColhido,100)}%;"></div></div>
                         </div>
                     `;
                 }).join('');
-            } else { boxBAtivos.innerHTML = "Nenhum bloco ativo no momento."; }
+            } else { boxBAtivos.innerHTML = "Nenhum bloco em colheita no momento."; }
+
+            const bAguardando = db.blocos.filter(b => b.status === 'Aguardando');
+            const boxAguardando = document.getElementById('dash-blocos-aguardando');
+            if(bAguardando.length > 0) {
+                boxAguardando.innerHTML = bAguardando.map(b => {
+                    const up = db.ups.find(u => u.id === b.idUP);
+                    return `
+                        <div style="padding:10px 12px; border:1px solid var(--border); margin-bottom:8px; border-radius:8px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+                            <strong style="cursor:pointer; color:var(--text-main);" onclick="abrirUPDetail('${up ? up.id : ''}')">${up ? up.nome : '-'} - Bloco ${b.nome}</strong>
+                            <button class="btn btn-primary btn-sm" onclick="iniciarColheitaBloco('${b.id}')">Iniciar Colheita</button>
+                        </div>
+                    `;
+                }).join('');
+            } else { boxAguardando.innerHTML = "Nenhum bloco aguardando."; }
+
+            const bFechados = db.blocos.filter(b => b.status === 'Fechado')
+                .sort((a,b2) => new Date(b2.dataFechamento||0) - new Date(a.dataFechamento||0))
+                .slice(0, 8);
+            const boxFechados = document.getElementById('dash-blocos-fechados');
+            if(bFechados.length > 0) {
+                boxFechados.innerHTML = bFechados.map(b => {
+                    const c = calcBloco(b);
+                    const up = db.ups.find(u => u.id === b.idUP);
+                    const dataTxt = b.dataFechamento ? new Date(b.dataFechamento).toLocaleDateString() : '-';
+                    return `
+                        <div style="padding:10px 12px; border:1px solid var(--border); margin-bottom:8px; border-radius:8px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+                            <span style="cursor:pointer;" onclick="abrirUPDetail('${up ? up.id : ''}')"><strong>${up ? up.nome : '-'} - Bloco ${b.nome}</strong> <span style="color:var(--text-muted); font-size:0.8rem;">(fechado em ${dataTxt})</span></span>
+                            <span style="font-size:0.85rem;">${formatarNumero(c.realizM3, 2)} m³</span>
+                        </div>
+                    `;
+                }).join('');
+            } else { boxFechados.innerHTML = "Nenhum bloco fechado recentemente."; }
 
             const mqMap = {};
-            db.maquinas.forEach(m => mqMap[m.id] = {nome: m.nome, m3: 0});
+            db.maquinas.forEach(m => mqMap[m.id] = {nome: formatarMaquina(m), m3: 0});
             db.lancamentos.forEach(l => { if(mqMap[l.idMaquina]) mqMap[l.idMaquina].m3 += l.m3; });
             const ranking = Object.values(mqMap).sort((a,b)=>b.m3 - a.m3);
             document.getElementById('dash-ranking').innerHTML = ranking.length ? ranking.slice(0,5).map((r,i) => `
                 <div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--border);">
-                    <span>${i+1}º ${r.nome}</span><strong>${r.m3.toFixed(2)}</strong>
+                    <span>${i+1}º ${r.nome}</span><strong>${formatarNumero(r.m3, 2)}</strong>
                 </div>
             `).join('') : '<p style="color:var(--text-muted); font-size:0.9rem;">Nenhuma máquina com produção ainda.</p>';
 
@@ -1447,7 +1649,7 @@
             if(bEstourados.length > 0) alertas.push(`<span class="negative-text">CRÍTICO: ${bEstourados.length} bloco(s) estouraram o planejado!</span>`);
 
             if(alertas.length > 0) msg = alertas.join("<br><br>");
-            document.getElementById('luna-insights').innerHTML = `<h4>Assistente Luna 🌙</h4><p style="font-size:0.9rem; line-height:1.4;">${msg}</p>`;
+            document.getElementById('luna-insights').innerHTML = `<h4>Assistente Luna</h4><p style="font-size:0.9rem; line-height:1.4;">${msg}</p>`;
         }
 
         // ---------- Exportação (com planejado x realizado, por Máquina/UP/Bloco) ----------
@@ -1458,7 +1660,7 @@
             document.getElementById('exp-filtro-bloco').style.display = tipo === 'bloco' ? 'block' : 'none';
 
             if(tipo === 'maquina') {
-                document.getElementById('exp-select-maquina').innerHTML = db.maquinas.map(m => `<option value="${m.id}">${m.nome}</option>`).join('') || '<option value="">Nenhuma máquina cadastrada</option>';
+                document.getElementById('exp-select-maquina').innerHTML = db.maquinas.map(m => `<option value="${m.id}">${formatarMaquina(m)}</option>`).join('') || '<option value="">Nenhuma máquina cadastrada</option>';
             }
             if(tipo === 'up' || tipo === 'bloco') {
                 document.getElementById('exp-select-up').innerHTML = db.ups.map(u => `<option value="${u.id}">${u.nome}</option>`).join('') || '<option value="">Nenhuma UP cadastrada</option>';
@@ -1482,28 +1684,28 @@
                 const m3Tot = db.lancamentos.reduce((s,l)=>s+l.m3,0);
                 resumo = [
                     {label:'Total de Apontamentos', value: db.lancamentos.length},
-                    {label:'Árvores Totais', value: arvTot.toFixed(0)},
-                    {label:'M³ Totais', value: m3Tot.toFixed(2)},
+                    {label:'Árvores Totais', value: formatarNumero(arvTot, 0)},
+                    {label:'M³ Totais', value: formatarNumero(m3Tot, 2)},
                 ];
                 colunas = ['Data','Máquina','UP','Bloco','Árvores','M³','Inspetor'];
                 linhas = db.lancamentos.slice().sort((a,b)=>new Date(b.data)-new Date(a.data)).map(l => {
                     const m = db.maquinas.find(x=>x.id===l.idMaquina);
                     const u = db.ups.find(x=>x.id===l.idUP);
                     const b = db.blocos.find(x=>x.id===l.idBloco);
-                    return [new Date(l.data).toLocaleDateString(), m?m.nome:'-', u?u.nome:'-', b?b.nome:'-', l.arvores, l.m3.toFixed(2), l.userId||'-'];
+                    return [new Date(l.data).toLocaleDateString(), formatarMaquina(m), u?u.nome:'-', b?b.nome:'-', l.arvores, formatarNumero(l.m3, 2), l.userId||'-'];
                 });
             } else if(tipo === 'maquina') {
                 const idMaq = document.getElementById('exp-select-maquina').value;
                 const m = db.maquinas.find(x => x.id === idMaq);
                 if(!m) return alert('Selecione uma máquina.');
-                titulo = 'Relatório da Máquina ' + m.nome;
+                titulo = 'Relatório da Máquina ' + formatarMaquina(m);
                 const lancs = db.lancamentos.filter(l => l.idMaquina === idMaq);
                 const arvTot = lancs.reduce((s,l)=>s+l.arvores,0);
                 const m3Tot = lancs.reduce((s,l)=>s+l.m3,0);
                 resumo = [
                     {label:'Apontamentos', value: lancs.length},
-                    {label:'Árvores Realizadas', value: arvTot.toFixed(0)},
-                    {label:'M³ Realizados', value: m3Tot.toFixed(2)},
+                    {label:'Árvores Realizadas', value: formatarNumero(arvTot, 0)},
+                    {label:'M³ Realizados', value: formatarNumero(m3Tot, 2)},
                 ];
                 const porBloco = {};
                 lancs.forEach(l => {
@@ -1518,7 +1720,7 @@
                     const c = calcBloco(b);
                     const dadosMaq = porBloco[idBloco];
                     const pct = c.planArv > 0 ? (dadosMaq.arv / c.planArv * 100) : 0;
-                    return [c.up.nome, b.nome, `${c.planArv.toFixed(0)} / ${c.planM3.toFixed(2)}`, `${dadosMaq.arv.toFixed(0)} / ${dadosMaq.m3.toFixed(2)}`, pct.toFixed(1)+'%'];
+                    return [c.up.nome, b.nome, `${formatarNumero(c.planArv, 0)} / ${formatarNumero(c.planM3, 2)}`, `${formatarNumero(dadosMaq.arv, 0)} / ${formatarNumero(dadosMaq.m3, 2)}`, pct.toFixed(1)+'%'];
                 }).filter(Boolean);
                 if(linhas.length === 0) { colunas = ['Aviso']; linhas = [['Esta máquina ainda não tem lançamentos registrados.']]; }
             } else if(tipo === 'up') {
@@ -1532,15 +1734,15 @@
                 const realizM3 = lancsUP.reduce((s,l)=>s+l.m3,0);
                 resumo = [
                     {label:'Área (Ha)', value: u.area},
-                    {label:'Planejado (Árv/M³)', value: `${calc.arvTotais.toFixed(0)} / ${calc.m3Totais.toFixed(2)}`},
-                    {label:'Realizado (Árv/M³)', value: `${realizArv.toFixed(0)} / ${realizM3.toFixed(2)}`},
-                    {label:'Saldo (M³)', value: (calc.m3Totais-realizM3).toFixed(2)},
+                    {label:'Planejado (Árv/M³)', value: `${formatarNumero(calc.arvTotais, 0)} / ${formatarNumero(calc.m3Totais, 2)}`},
+                    {label:'Realizado (Árv/M³)', value: `${formatarNumero(realizArv, 0)} / ${formatarNumero(realizM3, 2)}`},
+                    {label:'Saldo (M³)', value: formatarNumero((calc.m3Totais-realizM3), 2)},
                 ];
                 colunas = ['Data','Bloco','Máquina','Árvores','M³'];
                 linhas = lancsUP.slice().sort((a,b)=>new Date(b.data)-new Date(a.data)).map(l => {
                     const b = db.blocos.find(x=>x.id===l.idBloco);
                     const mq = db.maquinas.find(x=>x.id===l.idMaquina);
-                    return [new Date(l.data).toLocaleDateString(), b?b.nome:'-', mq?mq.nome:'-', l.arvores, l.m3.toFixed(2)];
+                    return [new Date(l.data).toLocaleDateString(), b?b.nome:'-', formatarMaquina(mq), l.arvores, formatarNumero(l.m3, 2)];
                 });
             } else if(tipo === 'bloco') {
                 const idBloco = document.getElementById('exp-select-bloco').value;
@@ -1550,14 +1752,14 @@
                 titulo = 'Relatório do Bloco ' + b.nome + ' (UP ' + c.up.nome + ')';
                 resumo = [
                     {label:'Status', value: b.status},
-                    {label:'Planejado (Árv/M³)', value: `${c.planArv.toFixed(0)} / ${c.planM3.toFixed(2)}`},
-                    {label:'Realizado (Árv/M³)', value: `${c.realizArv.toFixed(0)} / ${c.realizM3.toFixed(2)}`},
-                    {label:'Saldo (M³)', value: c.saldoM3.toFixed(2)},
+                    {label:'Planejado (Árv/M³)', value: `${formatarNumero(c.planArv, 0)} / ${formatarNumero(c.planM3, 2)}`},
+                    {label:'Realizado (Árv/M³)', value: `${formatarNumero(c.realizArv, 0)} / ${formatarNumero(c.realizM3, 2)}`},
+                    {label:'Saldo (M³)', value: formatarNumero(c.saldoM3, 2)},
                 ];
                 colunas = ['Data','Máquina','Árvores','M³'];
                 linhas = db.lancamentos.filter(l => l.idBloco === idBloco).sort((a,b2)=>new Date(b2.data)-new Date(a.data)).map(l => {
                     const mq = db.maquinas.find(x=>x.id===l.idMaquina);
-                    return [new Date(l.data).toLocaleDateString(), mq?mq.nome:'-', l.arvores, l.m3.toFixed(2)];
+                    return [new Date(l.data).toLocaleDateString(), formatarMaquina(mq), l.arvores, formatarNumero(l.m3, 2)];
                 });
             }
 
@@ -1603,7 +1805,7 @@
         }
         function exportarWhatsapp() {
             if(!relatorioAtual) return;
-            let txt = `*${relatorioAtual.titulo}* 🌲\n\n`;
+            let txt = `*${relatorioAtual.titulo}*\n\n`;
             relatorioAtual.resumo.forEach(r => txt += `${r.label}: ${r.value}\n`);
             txt += '\n';
             relatorioAtual.linhas.slice(0,20).forEach(linha => txt += linha.join(' | ') + '\n');
@@ -1612,6 +1814,54 @@
         }
 
         // ---------- Importar Excel/CSV ----------
+        // Em vez de depender de posição fixa de coluna, varremos a 1ª linha (cabeçalho)
+        // procurando por palavras-chave, então funciona mesmo se a ordem das colunas mudar.
+        function normalizarTexto(s) {
+            return (s || '').toString().trim().toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        }
+        function detectarColunasImportacao(headerRow) {
+            const normalizados = headerRow.map(normalizarTexto);
+            const usadas = new Set();
+
+            function acharColuna(testes) {
+                for(const teste of testes) {
+                    for(let i = 0; i < normalizados.length; i++) {
+                        if(usadas.has(i)) continue;
+                        const cel = normalizados[i];
+                        if(!cel) continue;
+                        if(teste.exato ? cel === teste.valor : cel.includes(teste.valor)) {
+                            usadas.add(i);
+                            return i;
+                        }
+                    }
+                }
+                return -1;
+            }
+
+            // Sinais mais específicos primeiro, pra não "roubar" a coluna certa de outro campo
+            // (ex: "Unidade de Produção" não pode ganhar a coluna de "Árvores/Produção")
+            const idxArvoresEspecifico = acharColuna([{valor:'ARVORE', exato:false}]);
+            const idxUP = acharColuna([{valor:'UP', exato:true}, {valor:'UNIDADE DE PRODU', exato:false}]);
+            const idxData = acharColuna([{valor:'DATA', exato:false}, {valor:'DIA', exato:true}]);
+            const idxPrefixo = acharColuna([{valor:'PREFIXO', exato:false}, {valor:'MAQUINA', exato:false}, {valor:'EQUIPAMENTO', exato:false}, {valor:'FROTA', exato:false}]);
+            const idxArvores = idxArvoresEspecifico !== -1 ? idxArvoresEspecifico : acharColuna([{valor:'PRODU', exato:false}]);
+
+            return { data: idxData, prefixo: idxPrefixo, up: idxUP, arvores: idxArvores };
+        }
+
+        // A planilha traz "HVE 672" mas cadastramos só o prefixo "672" — tenta achar
+        // a máquina cujo prefixo bate com alguma "palavra" do texto da célula.
+        function encontrarMaquinaPorPrefixoNoTexto(texto) {
+            const t = (texto || '').trim().toUpperCase();
+            if(!t) return null;
+            const tokens = t.split(/\s+/);
+            for(const token of tokens) {
+                const m = db.maquinas.find(x => x.prefixo && x.prefixo.toUpperCase() === token);
+                if(m) return m;
+            }
+            return db.maquinas.find(x => x.prefixo && t.includes(x.prefixo.toUpperCase())) || null;
+        }
+
         function processarImportacao() {
             if(!requireAuth()) return;
             const fileInput = document.getElementById('file-importar');
@@ -1622,40 +1872,168 @@
             reader.onload = function(e) {
                 try {
                     const data = new Uint8Array(e.target.result);
-                    const wb = XLSX.read(data, {type:'array'});
+                    const wb = XLSX.read(data, {type:'array', cellDates: true});
                     const ws = wb.Sheets[wb.SheetNames[0]];
-                    const rows = XLSX.utils.sheet_to_json(ws, {defval:''});
+                    // header:1 -> array de arrays por posição de coluna (0=A, 1=B, 2=C...)
+                    const linhas = XLSX.utils.sheet_to_json(ws, {header: 1, defval: ''});
 
-                    let sucesso = 0, erros = [];
-                    rows.forEach((row, i) => {
-                        const nomeMaq = String(row['Máquina'] || row['Maquina'] || '').trim().toUpperCase();
-                        const nomeBloco = String(row['Bloco'] || '').trim();
-                        const arv = parseInt(row['Árvores'] || row['Arvores']);
-                        if(!nomeMaq || !nomeBloco || isNaN(arv)) { erros.push(`Linha ${i+2}: dados incompletos.`); return; }
+                    if(linhas.length < 2) {
+                        document.getElementById('importar-resultado').innerHTML = `<p class="negative-text">A planilha está vazia ou só tem o cabeçalho.</p>`;
+                        return;
+                    }
 
-                        const maq = db.maquinas.find(m => m.nome === nomeMaq);
-                        if(!maq) { erros.push(`Linha ${i+2}: máquina "${nomeMaq}" não encontrada.`); return; }
-                        const bloco = db.blocos.find(b => b.nome.toUpperCase() === nomeBloco.toUpperCase() && b.status === 'Colhendo');
-                        if(!bloco) { erros.push(`Linha ${i+2}: bloco "${nomeBloco}" não encontrado ou já fechado.`); return; }
-                        const up = db.ups.find(u => u.id === bloco.idUP);
-                        if(!up) { erros.push(`Linha ${i+2}: UP do bloco não encontrada.`); return; }
+                    const cabecalho = linhas[0];
+                    const colunas = detectarColunasImportacao(cabecalho);
 
-                        let dataLanc = new Date();
-                        if(row['Data']) {
-                            const partes = String(row['Data']).split(/[\/\-]/);
-                            if(partes.length === 3) {
-                                dataLanc = new Date(parseInt(partes[2]), parseInt(partes[1])-1, parseInt(partes[0]), 12);
-                            }
+                    const faltando = [];
+                    if(colunas.data === -1) faltando.push('Data');
+                    if(colunas.prefixo === -1) faltando.push('Prefixo/Máquina');
+                    if(colunas.up === -1) faltando.push('UP');
+                    if(colunas.arvores === -1) faltando.push('Árvores/Produção');
+
+                    if(faltando.length > 0) {
+                        const listaCabecalho = cabecalho.map((c, i) => c ? `${XLSX.utils.encode_col(i)}: "${c}"` : null).filter(Boolean).join(', ');
+                        document.getElementById('importar-resultado').innerHTML = `
+                            <p class="negative-text">Não consegui identificar a coluna de: <b>${faltando.join(', ')}</b> na 1ª linha da planilha.</p>
+                            <p style="font-size:0.85rem; color:var(--text-muted); margin-top:6px;">Cabeçalhos encontrados: ${listaCabecalho || '(nenhum texto na 1ª linha)'}</p>
+                            <p style="font-size:0.85rem; color:var(--text-muted); margin-top:6px;">Ajuste o nome dessa coluna na planilha (ex: "Data", "Prefixo", "UP", "Árvores" ou "Produção") e tente novamente.</p>
+                        `;
+                        return;
+                    }
+
+                    let sucesso = 0, erros = [], ignoradas = 0, pendentes = 0;
+
+                    linhas.forEach((linha, i) => {
+                        if(i === 0) return; // pula a linha de cabeçalho
+
+                        const dataCel = linha[colunas.data];
+                        const prefixoTexto = String(linha[colunas.prefixo] || '').trim();
+                        const upTexto = String(linha[colunas.up] || '').trim();
+                        const arvTexto = String(linha[colunas.arvores] || '').trim();
+                        const dataTexto = dataCel instanceof Date ? dataCel.toLocaleDateString() : String(dataCel || '').trim();
+
+                        // Ignora silenciosamente linhas sem os dados que usamos (planilha tem muita coisa que não é nossa)
+                        if(!dataTexto || !prefixoTexto || !upTexto || !arvTexto) { ignoradas++; return; }
+
+                        const arv = parseInt(String(arvTexto).replace(/\D/g, ''));
+                        if(isNaN(arv) || arv <= 0) { erros.push(`Linha ${i+1}: quantidade de árvores inválida ("${arvTexto}").`); return; }
+
+                        const maq = encontrarMaquinaPorPrefixoNoTexto(prefixoTexto);
+                        if(!maq) { erros.push(`Linha ${i+1}: máquina não encontrada para "${prefixoTexto}".`); return; }
+
+                        const up = db.ups.find(u => u.nome.toUpperCase() === upTexto.toUpperCase());
+                        if(!up) { erros.push(`Linha ${i+1}: UP "${upTexto}" não cadastrada no sistema.`); return; }
+
+                        // Usa o Bloco Atual da máquina só se ele for da mesma UP da planilha.
+                        // Se não bater (ou não tiver bloco atual), importa mesmo assim como PENDENTE
+                        // (idBloco null) — não entra em nenhum saldo até alguém atribuir o bloco depois.
+                        const blocoAtual = getBlocoAtualDaMaquina(maq.id);
+                        const blocoValido = blocoAtual && blocoAtual.idUP === up.id ? blocoAtual : null;
+                        if(!blocoValido) pendentes++;
+
+                        let dataLanc;
+                        if(dataCel instanceof Date) {
+                            dataLanc = new Date(dataCel.getFullYear(), dataCel.getMonth(), dataCel.getDate(), 12, 0, 0);
+                        } else {
+                            const partes = dataTexto.split(/[\/\-]/);
+                            dataLanc = partes.length === 3 ? new Date(parseInt(partes[2]), parseInt(partes[1]) - 1, parseInt(partes[0]), 12) : null;
                         }
+                        if(!dataLanc || isNaN(dataLanc.getTime())) { erros.push(`Linha ${i+1}: data inválida ("${dataTexto}").`); return; }
 
                         db.lancamentos.push({
-                            id: Date.now().toString() + '_' + i, idMaquina: maq.id, idUP: up.id, idBloco: bloco.id,
+                            id: Date.now().toString() + '_' + i, idMaquina: maq.id, idUP: up.id, idBloco: blocoValido ? blocoValido.id : null,
                             data: dataLanc.toISOString(), arvores: arv, m3: arv * up.vmi, userId: currentUser
                         });
-                        maq.blocoAtualId = bloco.id;
                         sucesso++;
                     });
 
                     saveData();
                     renderAll();
-                    let resumo = `<p><b>${sucesso}</b> apontamento(s) importado(s) com sucesso.</p>`;
+                    const resumoColunas = `Data: coluna ${XLSX.utils.encode_col(colunas.data)} | Prefixo: coluna ${XLSX.utils.encode_col(colunas.prefixo)} | UP: coluna ${XLSX.utils.encode_col(colunas.up)} | Árvores: coluna ${XLSX.utils.encode_col(colunas.arvores)}`;
+                    let resumo = `<p style="font-size:0.8rem; color:var(--text-muted);">Colunas identificadas automaticamente — ${resumoColunas}</p>`;
+                    resumo += `<p style="margin-top:8px;"><b>${sucesso}</b> apontamento(s) importado(s) com sucesso.</p>`;
+                    if(pendentes > 0) resumo += `<p style="color:var(--info); margin-top:6px; font-size:0.85rem;">${pendentes} deles ficaram <b>sem bloco atribuído</b> (a UP da planilha não bate com o Bloco Atual da máquina) — atribua em Máquinas → Histórico.</p>`;
+                    if(ignoradas > 0) resumo += `<p style="color:var(--text-muted); margin-top:6px; font-size:0.85rem;">${ignoradas} linha(s) em branco/irrelevantes ignoradas.</p>`;
+                    if(erros.length > 0) resumo += `<p class="negative-text" style="margin-top:8px;">${erros.length} linha(s) com erro:</p><ul style="margin-left:20px; font-size:0.85rem;">${erros.slice(0,20).map(e=>`<li>${e}</li>`).join('')}</ul>`;
+                    document.getElementById('importar-resultado').innerHTML = resumo;
+                    fileInput.value = '';
+                } catch(err) {
+                    document.getElementById('importar-resultado').innerHTML = `<p class="negative-text">Erro ao processar o arquivo: ${err.message}</p>`;
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        function salvarLinkSheets() { alert("Link salvo no cofre digital da Luna! Preparado para a ponte."); }
+
+        // ---------- Backup Local (exportar tudo / restaurar de um arquivo) ----------
+        function exportarBackup() {
+            const backup = {
+                app: 'controle-blocos-fontech',
+                versao: 1,
+                exportadoEm: new Date().toISOString(),
+                dados: db
+            };
+            const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            const hoje = new Date().toISOString().split('T')[0];
+            a.download = `backup_controle_blocos_${hoje}.json`;
+            a.click();
+        }
+        function importarBackup(event) {
+            const file = event.target.files[0];
+            if(!file) return;
+            if(!requireAuth()) { event.target.value = ''; return; }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const conteudo = JSON.parse(e.target.result);
+                    const novoDb = conteudo.dados || conteudo; // aceita tanto o arquivo exportado quanto um JSON "cru"
+
+                    const camposEsperados = ['ups', 'blocos', 'maquinas', 'lancamentos'];
+                    const valido = camposEsperados.every(campo => Array.isArray(novoDb[campo]));
+                    if(!valido) {
+                        alert('Arquivo inválido: não parece ser um backup do Controle de Blocos.');
+                        event.target.value = '';
+                        return;
+                    }
+
+                    const resumo = `UPs: ${novoDb.ups.length} | Blocos: ${novoDb.blocos.length} | Máquinas: ${novoDb.maquinas.length} | Lançamentos: ${novoDb.lancamentos.length}`;
+                    if(!confirm(`Isso vai APAGAR os dados atuais deste aparelho e substituir pelos do backup:\n\n${resumo}\n\nDeseja continuar?`)) {
+                        event.target.value = '';
+                        return;
+                    }
+
+                    if(!novoDb.users) novoDb.users = db.users;
+                    db = novoDb;
+                    saveData();
+                    currentUser = null;
+                    checkAuth();
+                    renderAll();
+                    if(estaNaView('dashboard')) atualizarDashboard();
+                    alert('Backup restaurado com sucesso!');
+                } catch(err) {
+                    alert('Erro ao ler o arquivo: ' + err.message);
+                }
+                event.target.value = '';
+            };
+            reader.readAsText(file);
+        }
+        function renderAll() { renderUPs(); renderMaquinas(); renderBlocos(); }
+
+        // ---------- PWA: registro do Service Worker ----------
+        // Isso é o que permite o app aparecer como "instalável" e funcionar offline.
+        if('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .then(reg => console.log('Service Worker registrado:', reg.scope))
+                    .catch(err => console.error('Falha ao registrar Service Worker:', err));
+            });
+        }
+
+        window.onload = loadData;
+    </script>
+</body>
+</html>
