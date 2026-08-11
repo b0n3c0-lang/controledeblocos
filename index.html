@@ -181,6 +181,7 @@
         <symbol id="icon-settings" viewBox="0 0 24 24"><path d="M19.14,12.94c0.04-0.3,0.06-0.61,0.06-0.94c0-0.32-0.02-0.64-0.06-0.94l2.03-1.58c0.18-0.14,0.23-0.41,0.12-0.61 l-1.92-3.32c-0.12-0.22-0.37-0.29-0.59-0.22l-2.39,0.96c-0.5-0.38-1.03-0.7-1.62-0.94L14.4,2.81c-0.04-0.24-0.24-0.41-0.48-0.41 h-3.84c-0.24,0-0.43,0.17-0.47,0.41L9.25,5.35C8.66,5.59,8.12,5.92,7.63,6.29L5.24,5.33c-0.22-0.08-0.47,0-0.59,0.22L2.73,8.87 C2.62,9.08,2.66,9.34,2.86,9.48l2.03,1.58C4.84,11.36,4.8,11.69,4.8,12s0.02,0.64,0.06,0.94l-2.03,1.58 c-0.18,0.14-0.23,0.41-0.12,0.61l1.92,3.32c0.12,0.22,0.37,0.29,0.59,0.22l2.39-0.96c0.5,0.38,1.03,0.7,1.62,0.94l0.36,2.54 c0.05,0.24,0.24,0.41,0.48,0.41h3.84c0.24,0,0.43-0.17,0.47-0.41l0.36-2.54c0.59-0.24,1.13-0.56,1.62-0.94l2.39,0.96 c0.22,0.08,0.47,0,0.59-0.22l1.92-3.32c0.12-0.22,0.07-0.49-0.12-0.61L19.14,12.94z M12,15.6c-1.98,0-3.6-1.62-3.6-3.6 s1.62-3.6,3.6-3.6s3.6,1.62,3.6,3.6S13.98,15.6,12,15.6z"/></symbol>
         <symbol id="icon-user" viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4s-4 1.79-4 4s1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></symbol>
         <symbol id="icon-close" viewBox="0 0 24 24"><path d="M19 6.41L17.59 5L12 10.59L6.41 5L5 6.41L10.59 12L5 17.59L6.41 19L12 13.41L17.59 19L19 17.59L13.41 12z"/></symbol>
+        <symbol id="icon-calendar" viewBox="0 0 24 24"><path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11zM7 11h5v5H7z"/></symbol>
         <symbol id="icon-moon" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></symbol>
         <symbol id="icon-luna" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm0-14c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6-2.69-6-6-6zm0 10c-2.21 0-4-1.79-4-4s1.79-4 4-4 4 1.79 4 4-1.79 4-4 4z"/></symbol>
         <symbol id="icon-eucalipto" viewBox="0 0 24 24">
@@ -251,6 +252,7 @@
             <li onclick="showView('lancamentos')" id="nav-lancamentos"><svg><use href="#icon-leaf"></use></svg> Lançamentos</li>
             <li onclick="showView('maquinas')" id="nav-maquinas"><svg><use href="#icon-harvester"></use></svg> Máquinas</li>
             <li onclick="showView('ups')" id="nav-ups"><svg><use href="#icon-up"></use></svg> Gestão UP/Bloco</li>
+            <li onclick="showView('periodos')" id="nav-periodos"><svg><use href="#icon-calendar"></use></svg> Períodos</li>
             <li onclick="showView('importar')" id="nav-importar"><svg><use href="#icon-import"></use></svg> Importar Excel</li>
             <li onclick="showView('exportacao')" id="nav-exportacao"><svg><use href="#icon-export"></use></svg> Exportação</li>
             <li onclick="showView('configuracoes')" id="nav-configuracoes"><svg><use href="#icon-settings"></use></svg> Configurações</li>
@@ -500,6 +502,50 @@
             </div>
         </section>
 
+        <section id="view-periodos" class="view">
+            <div class="card">
+                <h3>Fechamento de Período</h3>
+                <p style="font-size:0.85rem; color:var(--text-muted); margin:10px 0 15px; line-height:1.5;">
+                    <b>Fechar Período</b> guarda uma cópia de tudo (UPs, blocos e lançamentos) num histórico — nada é apagado, você continua lançando normalmente depois.<br>
+                    <b>Iniciar Novo Período</b> zera as UPs, blocos e lançamentos atuais pra começar do zero (as máquinas cadastradas continuam). Recomendado só depois de fechar o período atual.
+                </p>
+                <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                    <button class="btn btn-primary" onclick="abrirModalFecharPeriodo()"><svg width="18" height="18" fill="white"><use href="#icon-calendar"></use></svg> Fechar Período Atual</button>
+                    <button class="btn btn-danger" onclick="iniciarNovoPeriodo()"><svg width="18" height="18" fill="white"><use href="#icon-close"></use></svg> Iniciar Novo Período</button>
+                </div>
+            </div>
+            <div class="card">
+                <h3>Histórico de Períodos Fechados</h3>
+                <div style="overflow-x: auto; margin-top:15px;">
+                    <table class="data-table">
+                        <thead><tr><th>Período</th><th>Fechado em</th><th>UPs</th><th>Blocos</th><th>Lançamentos</th><th>Ações</th></tr></thead>
+                        <tbody id="tb-periodos">
+                            <tr><td colspan="6" style="text-align:center; color:var(--text-muted);">Nenhum período fechado ainda.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <section id="view-periodo-detail" class="view">
+            <div class="card" style="margin-bottom:20px;">
+                <h3 style="display:flex; justify-content:space-between; align-items:center;">
+                    <span id="pd-title">Período</span>
+                    <button class="btn back-btn" onclick="showView('periodos')">⬅ Voltar para Períodos</button>
+                </h3>
+                <p style="font-size:0.8rem; color:var(--text-muted); margin-top:8px;">Snapshot congelado — dados de quando o período foi fechado (somente leitura).</p>
+            </div>
+            <div class="card">
+                <h3>UPs deste Período</h3>
+                <div style="overflow-x: auto; margin-top:15px;">
+                    <table class="data-table">
+                        <thead><tr><th>UP</th><th>VMi</th><th>Árv/Ha</th><th>Área</th><th>Planejado M³</th><th>Realizado M³</th><th>Saldo M³</th></tr></thead>
+                        <tbody id="tb-periodo-ups"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
         <section id="view-importar" class="view">
             <div class="card">
                 <h3>Importar Apontamentos (Excel/CSV)</h3>
@@ -512,6 +558,17 @@
                 <input type="file" class="form-control" id="file-importar" accept=".xlsx,.xls,.csv">
                 <button class="btn btn-primary" style="margin-top:15px;" onclick="processarImportacao()"><svg width="18" height="18" fill="white"><use href="#icon-import"></use></svg> Processar Planilha</button>
                 <div id="importar-resultado" style="margin-top:15px; font-size:0.9rem;"></div>
+            </div>
+
+            <div class="card">
+                <h3>Importar UPs (Excel/CSV)</h3>
+                <p style="font-size:0.85rem; color:var(--text-muted); margin: 10px 0 15px;">
+                    Detecta as colunas pelo <b>cabeçalho</b> da planilha (não importa a ordem): procura por uma coluna de <b>UP/Gleba</b>, <b>VMi</b>, <b>Árv/Ha</b> e <b>Área</b>.
+                    UPs com nome já existente são <b>atualizadas</b> (não duplicadas) — os blocos delas recalculam sozinhos.
+                </p>
+                <input type="file" class="form-control" id="file-importar-ups" accept=".xlsx,.xls,.csv">
+                <button class="btn btn-primary" style="margin-top:15px;" onclick="processarImportacaoUPs()"><svg width="18" height="18" fill="white"><use href="#icon-import"></use></svg> Processar Planilha de UPs</button>
+                <div id="importar-ups-resultado" style="margin-top:15px; font-size:0.9rem;"></div>
             </div>
         </section>
 
@@ -529,15 +586,30 @@
                 </div>
                 <div class="form-group" id="exp-filtro-maquina" style="display:none;">
                     <label>Selecione a Máquina</label>
-                    <select class="form-control" id="exp-select-maquina"></select>
+                    <div class="autocomplete-wrapper">
+                        <input type="text" class="form-control" id="exp-select-maquina-txt" placeholder="Digite pra buscar..." autocomplete="off"
+                            oninput="mostrarSugestoesExpMaquina(this.value)" onfocus="mostrarSugestoesExpMaquina(this.value)">
+                        <div class="autocomplete-list" id="sugestoes-exp-maquina"></div>
+                    </div>
+                    <input type="hidden" id="exp-select-maquina">
                 </div>
                 <div class="form-group" id="exp-filtro-up" style="display:none;">
                     <label>Selecione a UP</label>
-                    <select class="form-control" id="exp-select-up" onchange="atualizarSelectBlocoExportacao()"></select>
+                    <div class="autocomplete-wrapper">
+                        <input type="text" class="form-control" id="exp-select-up-txt" placeholder="Digite pra buscar..." autocomplete="off"
+                            oninput="mostrarSugestoesExpUP(this.value)" onfocus="mostrarSugestoesExpUP(this.value)">
+                        <div class="autocomplete-list" id="sugestoes-exp-up"></div>
+                    </div>
+                    <input type="hidden" id="exp-select-up">
                 </div>
                 <div class="form-group" id="exp-filtro-bloco" style="display:none;">
                     <label>Selecione o Bloco</label>
-                    <select class="form-control" id="exp-select-bloco"></select>
+                    <div class="autocomplete-wrapper">
+                        <input type="text" class="form-control" id="exp-select-bloco-txt" placeholder="Digite pra buscar..." autocomplete="off"
+                            oninput="mostrarSugestoesExpBloco(this.value)" onfocus="mostrarSugestoesExpBloco(this.value)">
+                        <div class="autocomplete-list" id="sugestoes-exp-bloco"></div>
+                    </div>
+                    <input type="hidden" id="exp-select-bloco">
                 </div>
                 <button class="btn btn-primary" onclick="gerarRelatorio()"><svg width="18" height="18" fill="white"><use href="#icon-export"></use></svg> Gerar Relatório</button>
             </div>
@@ -643,7 +715,12 @@
             <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:12px;">Máquina: <b id="troca-maquina-nome"></b></p>
             <div class="form-group">
                 <label>Bloco Atual (onde ela está trabalhando agora)</label>
-                <select class="form-control" id="troca-bloco-select"></select>
+                <div class="autocomplete-wrapper">
+                    <input type="text" class="form-control" id="troca-bloco-txt" placeholder="Digite pra buscar (ou deixe vazio)..." autocomplete="off"
+                        oninput="mostrarSugestoesTrocaBloco(this.value)" onfocus="mostrarSugestoesTrocaBloco(this.value)">
+                    <div class="autocomplete-list" id="sugestoes-troca-bloco"></div>
+                </div>
+                <input type="hidden" id="troca-bloco-select">
             </div>
             <button class="btn btn-primary" style="width:100%; justify-content:center;" onclick="salvarTrocaBloco()">Salvar</button>
         </div>
@@ -652,21 +729,50 @@
     <div class="modal" id="modal-lancamento">
         <div class="modal-content">
             <div class="modal-header"><h3>Editar Apontamento</h3><button class="close-btn" onclick="closeModal('modal-lancamento')"><svg width="24" height="24" fill="currentColor"><use href="#icon-close"></use></svg></button></div>
-            <div class="form-group"><label>Máquina</label><select class="form-control" id="edit-lanc-maquina"></select></div>
-            <div class="form-group"><label>Bloco</label><select class="form-control" id="edit-lanc-bloco"></select></div>
+            <div class="form-group">
+                <label>Máquina</label>
+                <div class="autocomplete-wrapper">
+                    <input type="text" class="form-control" id="edit-lanc-maquina-txt" placeholder="Digite pra buscar..." autocomplete="off"
+                        oninput="mostrarSugestoesEditMaquina(this.value)" onfocus="mostrarSugestoesEditMaquina(this.value)">
+                    <div class="autocomplete-list" id="sugestoes-edit-maquina"></div>
+                </div>
+                <input type="hidden" id="edit-lanc-maquina">
+            </div>
+            <div class="form-group">
+                <label>Bloco</label>
+                <div class="autocomplete-wrapper">
+                    <input type="text" class="form-control" id="edit-lanc-bloco-txt" placeholder="Digite pra buscar..." autocomplete="off"
+                        oninput="mostrarSugestoesEditBloco(this.value)" onfocus="mostrarSugestoesEditBloco(this.value)">
+                    <div class="autocomplete-list" id="sugestoes-edit-bloco"></div>
+                </div>
+                <input type="hidden" id="edit-lanc-bloco">
+            </div>
             <div class="form-group"><label>Data</label><input type="date" class="form-control" id="edit-lanc-data"></div>
             <div class="form-group"><label>Árvores Cortadas</label><input type="number" step="1" min="1" class="form-control" id="edit-lanc-arvores"></div>
             <button class="btn btn-primary" style="width:100%; justify-content:center;" onclick="salvarEdicaoLancamento()">Salvar Alterações</button>
         </div>
     </div>
 
+    <div class="modal" id="modal-fechar-periodo">
+        <div class="modal-content">
+            <div class="modal-header"><h3>Fechar Período</h3><button class="close-btn" onclick="closeModal('modal-fechar-periodo')"><svg width="24" height="24" fill="currentColor"><use href="#icon-close"></use></svg></button></div>
+            <div class="form-group">
+                <label>Nome do Período</label>
+                <input type="text" class="form-control" id="fp-nome">
+            </div>
+            <p style="font-size:0.8rem; color:var(--text-muted); margin-bottom:15px;">Isso guarda uma cópia do estado atual (UPs, blocos, lançamentos). Nada é apagado — você continua podendo lançar normalmente depois.</p>
+            <button class="btn btn-primary" style="width:100%; justify-content:center;" onclick="confirmarFecharPeriodo()">Confirmar Fechamento</button>
+        </div>
+    </div>
+
     <script>
         let db = {
             ups: [],        // { id, nome, vmi, arvHa, area }
-            blocos: [],     // { id, idUP, nome, area, status: 'Colhendo'|'Fechado' }
+            blocos: [],     // { id, idUP, nome, area, status: 'Aguardando'|'Colhendo'|'Fechado' }
             maquinas: [],   // { id, nome, status: 'Ativa'|'Inativa', blocoAtualId }
             lancamentos: [],// { id, idMaquina, idUP, idBloco, data, arvores, m3, userId }
-            users: []       // { id, senha }
+            users: [],      // { id, senha }
+            periodos: []    // { id, nome, dataFechamento, snapshot: { ups, blocos, lancamentos } }
         };
         let currentUser = null;
         let upSelecionadaParaBlocos = null;
@@ -688,6 +794,7 @@
             if(db.users.length === 0) {
                 db.users.push({ id: 'admin', senha: '123' });
             }
+            if(!db.periodos) db.periodos = [];
             // Migração: garante campos novos em dados salvos anteriormente
             db.maquinas.forEach(m => {
                 if(!m.status) m.status = 'Ativa';
@@ -775,6 +882,7 @@
             // Fecha o menu lateral SOMENTE se ele já estava aberto (nunca abre sozinho)
             if(document.getElementById('sidebar').classList.contains('open')) toggleSidebar();
             if(viewId === 'dashboard') { atualizarDashboard(); }
+            if(viewId === 'periodos') { renderPeriodos(); }
         }
         function closeModal(id) { document.getElementById(id).classList.remove('active'); }
         function toggleTheme() {
@@ -822,7 +930,9 @@
         function getBlocoAtualDaMaquina(idMaquina) {
             const m = db.maquinas.find(x => x.id === idMaquina);
             if(!m || !m.blocoAtualId) return null;
-            const b = db.blocos.find(x => x.id === m.blocoAtualId && x.status === 'Colhendo');
+            // Aceita "Colhendo" e "Aguardando" — a máquina já pode estar associada a um bloco
+            // que ainda não começou a ser cortado (o primeiro apontamento nele inicia sozinho).
+            const b = db.blocos.find(x => x.id === m.blocoAtualId && (x.status === 'Colhendo' || x.status === 'Aguardando'));
             return b || null;
         }
 
@@ -866,15 +976,40 @@
             if(upEditId) {
                 const u = db.ups.find(x => x.id === upEditId);
                 if(u) { u.nome = n; u.vmi = v; u.arvHa = a; u.area = area; }
-                saveData(); closeModal('modal-up'); renderUPs();
-                if(upSelecionadaParaBlocos && upSelecionadaParaBlocos.id === upEditId) abrirUPDetail(upEditId);
-                alert("UP atualizada!");
+                saveData(); closeModal('modal-up');
+                // VMi/Árv-Ha da UP mudaram — o m³ planejado de todos os blocos dela já é
+                // calculado na hora (nunca fica guardado fixo), então só precisamos atualizar
+                // as telas que exibem esses números pra refletir na hora, sem esperar navegação.
+                atualizarTudoAposEdicaoUP(upEditId);
+                alert("UP atualizada! Os blocos dela já foram recalculados automaticamente.");
             } else {
                 db.ups.push({ id: Date.now().toString(), nome: n, vmi: v, arvHa: a, area: area });
                 saveData(); closeModal('modal-up'); renderUPs();
                 alert("UP salva!");
             }
             upEditId = null;
+        }
+        // Atualiza TODAS as telas que podem mostrar números derivados da UP editada
+        // (sem forçar navegação — a pessoa continua vendo a tela em que já estava).
+        function atualizarTudoAposEdicaoUP(idUP) {
+            renderUPs();
+            if(upSelecionadaParaBlocos && upSelecionadaParaBlocos.id === idUP) {
+                const uAtual = db.ups.find(u => u.id === idUP);
+                if(uAtual) {
+                    const calc = calcUP(uAtual);
+                    document.getElementById('upd-title').innerText = 'UP ' + uAtual.nome;
+                    document.getElementById('upd-vmi').innerText = uAtual.vmi;
+                    document.getElementById('upd-arvha').innerText = uAtual.arvHa;
+                    document.getElementById('upd-area').innerText = uAtual.area;
+                    document.getElementById('upd-m3total').innerText = formatarNumero(calc.m3Totais, 2);
+                }
+                renderBlocos();
+                renderHistoricoUP();
+            }
+            renderBlocoDetail();
+            renderHistMaquina();
+            renderMaquinas();
+            if(estaNaView('dashboard')) atualizarDashboard();
         }
         function excluirUP(id) {
             if(!requireAuth()) return;
@@ -1182,14 +1317,36 @@
             const m = db.maquinas.find(x => x.id === idMaquina);
             if(!m) return;
             document.getElementById('troca-maquina-nome').innerText = formatarMaquina(m);
-            const ativos = db.blocos.filter(b => b.status === 'Colhendo');
-            const sel = document.getElementById('troca-bloco-select');
-            sel.innerHTML = '<option value="">— Nenhum —</option>' + ativos.map(b => {
-                const up = db.ups.find(u => u.id === b.idUP);
-                return `<option value="${b.id}">${up ? up.nome : '-'} - Bloco ${b.nome}</option>`;
-            }).join('');
-            sel.value = m.blocoAtualId || '';
+            const atual = m.blocoAtualId ? db.blocos.find(b => b.id === m.blocoAtualId) : null;
+            document.getElementById('troca-bloco-txt').value = atual ? atual.nome : '';
+            document.getElementById('troca-bloco-select').value = m.blocoAtualId || '';
             document.getElementById('modal-trocar-bloco').classList.add('active');
+        }
+        function mostrarSugestoesTrocaBloco(valor) {
+            const box = document.getElementById('sugestoes-troca-bloco');
+            const filtro = (valor || '').trim().toUpperCase();
+            const ativos = db.blocos.filter(b => b.status === 'Colhendo' || b.status === 'Aguardando');
+            const itens = filtro ? ativos.filter(b => b.nome.toUpperCase().startsWith(filtro)) : ativos;
+            let html = `<div class="autocomplete-item" onclick="selecionarTrocaBloco('')" style="color:var(--text-muted);">— Nenhum —</div>`;
+            html += itens.length ? itens.map(b => {
+                const up = db.ups.find(u => u.id === b.idUP);
+                return `<div class="autocomplete-item" onclick="selecionarTrocaBloco('${b.id}')">${up ? up.nome : '-'} - Bloco ${b.nome} (${b.status})</div>`;
+            }).join('') : `<div class="autocomplete-empty">Nenhum bloco encontrado começando com "${valor}".</div>`;
+            box.innerHTML = html;
+            box.classList.add('active');
+        }
+        function selecionarTrocaBloco(id) {
+            if(!id) {
+                document.getElementById('troca-bloco-txt').value = '';
+                document.getElementById('troca-bloco-select').value = '';
+                document.getElementById('sugestoes-troca-bloco').classList.remove('active');
+                return;
+            }
+            const b = db.blocos.find(x => x.id === id);
+            if(!b) return;
+            document.getElementById('troca-bloco-txt').value = b.nome;
+            document.getElementById('troca-bloco-select').value = id;
+            document.getElementById('sugestoes-troca-bloco').classList.remove('active');
         }
         function salvarTrocaBloco() {
             const m = db.maquinas.find(x => x.id === trocaMaquinaId);
@@ -1289,13 +1446,13 @@
             const filtro = (valor || '').trim().toUpperCase();
             const ativas = db.maquinas.filter(m => m.status !== 'Inativa');
             const itens = filtro ? ativas.filter(m =>
-                (m.prefixo && m.prefixo.toUpperCase().includes(filtro)) || m.nome.toUpperCase().includes(filtro)
+                (m.prefixo && m.prefixo.toUpperCase().startsWith(filtro)) || m.nome.toUpperCase().startsWith(filtro)
             ) : ativas;
 
             if(ativas.length === 0) {
                 box.innerHTML = `<div class="autocomplete-empty">Nenhuma máquina ativa cadastrada. Cadastre em "Máquinas" no menu.</div>`;
             } else if(itens.length === 0) {
-                box.innerHTML = `<div class="autocomplete-empty">Nenhuma máquina encontrada para "${valor}".</div>`;
+                box.innerHTML = `<div class="autocomplete-empty">Nenhuma máquina encontrada começando com "${valor}".</div>`;
             } else {
                 box.innerHTML = itens.map(m => `<div class="autocomplete-item" onclick="selecionarMaquina('${m.id}')">${formatarMaquina(m)}</div>`).join('');
             }
@@ -1333,17 +1490,18 @@
         function mostrarSugestoesBloco(valor) {
             const box = document.getElementById('sugestoes-bloco');
             const filtro = (valor || '').trim().toUpperCase();
-            const ativos = db.blocos.filter(b => b.status === 'Colhendo');
-            const itens = filtro ? ativos.filter(b => b.nome.toUpperCase().includes(filtro)) : ativos;
+            const ativos = db.blocos.filter(b => b.status === 'Colhendo' || b.status === 'Aguardando');
+            const itens = filtro ? ativos.filter(b => b.nome.toUpperCase().startsWith(filtro)) : ativos;
 
             if(ativos.length === 0) {
-                box.innerHTML = `<div class="autocomplete-empty">Nenhum bloco ativo. Cadastre um bloco na aba "Gestão UP/Bloco".</div>`;
+                box.innerHTML = `<div class="autocomplete-empty">Nenhum bloco disponível. Cadastre um bloco na aba "Gestão UP/Bloco".</div>`;
             } else if(itens.length === 0) {
-                box.innerHTML = `<div class="autocomplete-empty">Nenhum bloco ativo encontrado para "${valor}".</div>`;
+                box.innerHTML = `<div class="autocomplete-empty">Nenhum bloco encontrado começando com "${valor}".</div>`;
             } else {
                 box.innerHTML = itens.map(b => {
                     const up = db.ups.find(u => u.id === b.idUP);
-                    return `<div class="autocomplete-item" onclick="selecionarBloco('${b.id}')">Bloco ${b.nome} <span style="color:var(--text-muted); font-size:0.8rem;">(UP ${up ? up.nome : '-'})</span></div>`;
+                    const tagAguardando = b.status === 'Aguardando' ? ' <span style="color:var(--info); font-size:0.75rem;">(Aguardando — inicia colheita ao lançar)</span>' : '';
+                    return `<div class="autocomplete-item" onclick="selecionarBloco('${b.id}')">Bloco ${b.nome} <span style="color:var(--text-muted); font-size:0.8rem;">(UP ${up ? up.nome : '-'})</span>${tagAguardando}</div>`;
                 }).join('');
             }
             box.classList.add('active');
@@ -1365,10 +1523,9 @@
 
         function processarBlocoLancamento() {
             const blNome = document.getElementById('lan-bloco').value.trim();
-            const bloco = db.blocos.find(b => b.nome.toUpperCase() === blNome.toUpperCase() && b.status === 'Colhendo');
+            const bloco = db.blocos.find(b => b.nome.toUpperCase() === blNome.toUpperCase() && (b.status === 'Colhendo' || b.status === 'Aguardando'));
 
             if(bloco) {
-                const up = db.ups.find(u => u.id === bloco.idUP);
                 if(up) {
                     document.getElementById('lan-up-detectada').value = up.nome;
                     const c = calcBloco(bloco);
@@ -1405,7 +1562,7 @@
             if(!maq) return alert("Máquina não encontrada. Selecione uma opção da lista ou cadastre-a primeiro em 'Máquinas'.");
             if(maq.status === 'Inativa') return alert("Essa máquina está Inativa. Reative-a em 'Máquinas' para lançar apontamentos.");
 
-            const bloco = db.blocos.find(b => b.nome.toUpperCase() === bNome.toUpperCase() && b.status === 'Colhendo');
+            const bloco = db.blocos.find(b => b.nome.toUpperCase() === bNome.toUpperCase() && (b.status === 'Colhendo' || b.status === 'Aguardando'));
             if(!bloco) return alert("Bloco não encontrado ou já fechado.");
 
             const up = db.ups.find(u => u.id === bloco.idUP);
@@ -1425,6 +1582,12 @@
                 id: Date.now().toString(), idMaquina: maq.id, idUP: up.id, idBloco: bloco.id,
                 data: dataFinal.toISOString(), arvores: arv, m3: m3, userId: currentUser
             });
+
+            // Modo automático: primeiro apontamento num bloco "Aguardando" já inicia a colheita
+            // sozinho (o botão manual "Iniciar Colheita" continua funcionando pra quem preferir).
+            const iniciouAutomaticamente = bloco.status === 'Aguardando';
+            if(iniciouAutomaticamente) bloco.status = 'Colhendo';
+
             maq.blocoAtualId = bloco.id;
             saveData();
 
@@ -1436,7 +1599,7 @@
             esconderDicaBlocoMaquina();
 
             atualizarViewsAposLancamento();
-            alert("Lançamento salvo com sucesso! [ID: " + currentUser + "]");
+            alert("Lançamento salvo com sucesso!" + (iniciouAutomaticamente ? ` O bloco ${bloco.nome} entrou automaticamente em Colhendo.` : '') + " [ID: " + currentUser + "]");
         }
 
         function abrirModalEditarLancamento(id) {
@@ -1445,16 +1608,48 @@
             if(!l) return;
             lancamentoEditId = id;
 
-            document.getElementById('edit-lanc-maquina').innerHTML = db.maquinas.map(m =>
-                `<option value="${m.id}" ${m.id === l.idMaquina ? 'selected' : ''}>${formatarMaquina(m)}${m.status === 'Inativa' ? ' (inativa)' : ''}</option>`
-            ).join('');
-            document.getElementById('edit-lanc-bloco').innerHTML = db.blocos.map(b => {
-                const up = db.ups.find(u => u.id === b.idUP);
-                return `<option value="${b.id}" ${b.id === l.idBloco ? 'selected' : ''}>${up ? up.nome : '-'} - Bloco ${b.nome} (${b.status})</option>`;
-            }).join('');
+            const maqAtual = db.maquinas.find(m => m.id === l.idMaquina);
+            document.getElementById('edit-lanc-maquina-txt').value = maqAtual ? formatarMaquina(maqAtual) + (maqAtual.status === 'Inativa' ? ' (inativa)' : '') : '';
+            document.getElementById('edit-lanc-maquina').value = l.idMaquina || '';
+
+            const blocoAtualEdit = db.blocos.find(b => b.id === l.idBloco);
+            document.getElementById('edit-lanc-bloco-txt').value = blocoAtualEdit ? blocoAtualEdit.nome : '';
+            document.getElementById('edit-lanc-bloco').value = l.idBloco || '';
+
             document.getElementById('edit-lanc-data').value = new Date(l.data).toISOString().slice(0, 10);
             document.getElementById('edit-lanc-arvores').value = l.arvores;
             document.getElementById('modal-lancamento').classList.add('active');
+        }
+        function mostrarSugestoesEditMaquina(valor) {
+            const box = document.getElementById('sugestoes-edit-maquina');
+            const filtro = (valor || '').trim().toUpperCase();
+            const itens = filtro ? db.maquinas.filter(m => (m.prefixo && m.prefixo.toUpperCase().startsWith(filtro)) || m.nome.toUpperCase().startsWith(filtro)) : db.maquinas;
+            box.innerHTML = itens.length ? itens.map(m => `<div class="autocomplete-item" onclick="selecionarEditMaquina('${m.id}')">${formatarMaquina(m)}${m.status === 'Inativa' ? ' (inativa)' : ''}</div>`).join('') : `<div class="autocomplete-empty">Nada encontrado começando com "${valor}".</div>`;
+            box.classList.add('active');
+        }
+        function selecionarEditMaquina(id) {
+            const m = db.maquinas.find(x => x.id === id);
+            if(!m) return;
+            document.getElementById('edit-lanc-maquina-txt').value = formatarMaquina(m) + (m.status === 'Inativa' ? ' (inativa)' : '');
+            document.getElementById('edit-lanc-maquina').value = id;
+            document.getElementById('sugestoes-edit-maquina').classList.remove('active');
+        }
+        function mostrarSugestoesEditBloco(valor) {
+            const box = document.getElementById('sugestoes-edit-bloco');
+            const filtro = (valor || '').trim().toUpperCase();
+            const itens = filtro ? db.blocos.filter(b => b.nome.toUpperCase().startsWith(filtro)) : db.blocos;
+            box.innerHTML = itens.length ? itens.map(b => {
+                const up = db.ups.find(u => u.id === b.idUP);
+                return `<div class="autocomplete-item" onclick="selecionarEditBloco('${b.id}')">${up ? up.nome : '-'} - Bloco ${b.nome} (${b.status})</div>`;
+            }).join('') : `<div class="autocomplete-empty">Nada encontrado começando com "${valor}".</div>`;
+            box.classList.add('active');
+        }
+        function selecionarEditBloco(id) {
+            const b = db.blocos.find(x => x.id === id);
+            if(!b) return;
+            document.getElementById('edit-lanc-bloco-txt').value = b.nome;
+            document.getElementById('edit-lanc-bloco').value = id;
+            document.getElementById('sugestoes-edit-bloco').classList.remove('active');
         }
         function salvarEdicaoLancamento() {
             const l = db.lancamentos.find(x => x.id === lancamentoEditId);
@@ -1470,6 +1665,10 @@
             if(!bloco) return alert("Bloco inválido.");
             const up = db.ups.find(u => u.id === bloco.idUP);
             if(!up) return alert("UP do bloco não encontrada.");
+
+            // Se o bloco escolhido (ex: atribuindo bloco a um lançamento pendente) estava
+            // Aguardando, este apontamento também dispara o início automático da colheita.
+            if(bloco.status === 'Aguardando') bloco.status = 'Colhendo';
 
             const [ano, mes, dia] = novaData.split('-').map(Number);
             const novaDataObj = new Date(ano, mes - 1, dia, 12, 0, 0);
@@ -1506,7 +1705,7 @@
         function finalizarBlocoAtual() {
             if(!requireAuth()) return;
             const bNome = document.getElementById('lan-bloco').value.trim();
-            const bloco = db.blocos.find(b => b.nome.toUpperCase() === bNome.toUpperCase() && b.status === 'Colhendo');
+            const bloco = db.blocos.find(b => b.nome.toUpperCase() === bNome.toUpperCase() && (b.status === 'Colhendo' || b.status === 'Aguardando'));
             if(bloco) {
                 if(confirm("Deseja realmente FECHAR o bloco " + bloco.nome + "?")) {
                     bloco.status = 'Fechado';
@@ -1659,19 +1858,62 @@
             document.getElementById('exp-filtro-up').style.display = (tipo === 'up' || tipo === 'bloco') ? 'block' : 'none';
             document.getElementById('exp-filtro-bloco').style.display = tipo === 'bloco' ? 'block' : 'none';
 
-            if(tipo === 'maquina') {
-                document.getElementById('exp-select-maquina').innerHTML = db.maquinas.map(m => `<option value="${m.id}">${formatarMaquina(m)}</option>`).join('') || '<option value="">Nenhuma máquina cadastrada</option>';
-            }
-            if(tipo === 'up' || tipo === 'bloco') {
-                document.getElementById('exp-select-up').innerHTML = db.ups.map(u => `<option value="${u.id}">${u.nome}</option>`).join('') || '<option value="">Nenhuma UP cadastrada</option>';
-                if(tipo === 'bloco') atualizarSelectBlocoExportacao();
-            }
+            document.getElementById('exp-select-maquina-txt').value = '';
+            document.getElementById('exp-select-maquina').value = '';
+            document.getElementById('exp-select-up-txt').value = '';
+            document.getElementById('exp-select-up').value = '';
+            document.getElementById('exp-select-bloco-txt').value = '';
+            document.getElementById('exp-select-bloco').value = '';
             document.getElementById('exp-preview').style.display = 'none';
         }
-        function atualizarSelectBlocoExportacao() {
+        function mostrarSugestoesExpMaquina(valor) {
+            const box = document.getElementById('sugestoes-exp-maquina');
+            const filtro = (valor || '').trim().toUpperCase();
+            const itens = filtro ? db.maquinas.filter(m => (m.prefixo && m.prefixo.toUpperCase().startsWith(filtro)) || m.nome.toUpperCase().startsWith(filtro)) : db.maquinas;
+            box.innerHTML = itens.length ? itens.map(m => `<div class="autocomplete-item" onclick="selecionarExpMaquina('${m.id}')">${formatarMaquina(m)}</div>`).join('') : `<div class="autocomplete-empty">Nada encontrado.</div>`;
+            box.classList.add('active');
+        }
+        function selecionarExpMaquina(id) {
+            const m = db.maquinas.find(x => x.id === id);
+            if(!m) return;
+            document.getElementById('exp-select-maquina-txt').value = formatarMaquina(m);
+            document.getElementById('exp-select-maquina').value = id;
+            document.getElementById('sugestoes-exp-maquina').classList.remove('active');
+        }
+        function mostrarSugestoesExpUP(valor) {
+            const box = document.getElementById('sugestoes-exp-up');
+            const filtro = (valor || '').trim().toUpperCase();
+            const itens = filtro ? db.ups.filter(u => u.nome.toUpperCase().startsWith(filtro)) : db.ups;
+            box.innerHTML = itens.length ? itens.map(u => `<div class="autocomplete-item" onclick="selecionarExpUP('${u.id}')">${u.nome}</div>`).join('') : `<div class="autocomplete-empty">Nada encontrado.</div>`;
+            box.classList.add('active');
+        }
+        function selecionarExpUP(id) {
+            const u = db.ups.find(x => x.id === id);
+            if(!u) return;
+            document.getElementById('exp-select-up-txt').value = u.nome;
+            document.getElementById('exp-select-up').value = id;
+            document.getElementById('sugestoes-exp-up').classList.remove('active');
+            atualizarSelectBlocoExportacao();
+        }
+        function mostrarSugestoesExpBloco(valor) {
             const idUP = document.getElementById('exp-select-up').value;
+            const box = document.getElementById('sugestoes-exp-bloco');
+            const filtro = (valor || '').trim().toUpperCase();
             const blocosDaUP = db.blocos.filter(b => b.idUP === idUP);
-            document.getElementById('exp-select-bloco').innerHTML = blocosDaUP.map(b => `<option value="${b.id}">${b.nome} (${b.status})</option>`).join('') || '<option value="">Nenhum bloco nesta UP</option>';
+            const itens = filtro ? blocosDaUP.filter(b => b.nome.toUpperCase().startsWith(filtro)) : blocosDaUP;
+            box.innerHTML = itens.length ? itens.map(b => `<div class="autocomplete-item" onclick="selecionarExpBloco('${b.id}')">${b.nome} (${b.status})</div>`).join('') : `<div class="autocomplete-empty">${idUP ? 'Nenhum bloco nesta UP.' : 'Selecione uma UP primeiro.'}</div>`;
+            box.classList.add('active');
+        }
+        function selecionarExpBloco(id) {
+            const b = db.blocos.find(x => x.id === id);
+            if(!b) return;
+            document.getElementById('exp-select-bloco-txt').value = b.nome;
+            document.getElementById('exp-select-bloco').value = id;
+            document.getElementById('sugestoes-exp-bloco').classList.remove('active');
+        }
+        function atualizarSelectBlocoExportacao() {
+            document.getElementById('exp-select-bloco-txt').value = '';
+            document.getElementById('exp-select-bloco').value = '';
         }
 
         function gerarRelatorio() {
@@ -2007,6 +2249,7 @@
                     }
 
                     if(!novoDb.users) novoDb.users = db.users;
+                    if(!novoDb.periodos) novoDb.periodos = [];
                     db = novoDb;
                     saveData();
                     currentUser = null;
@@ -2022,6 +2265,207 @@
             reader.readAsText(file);
         }
         function renderAll() { renderUPs(); renderMaquinas(); renderBlocos(); }
+
+        // ---------- Fechamento de Período ----------
+        function abrirModalFecharPeriodo() {
+            if(!requireAuth()) return;
+            const ultimoPeriodo = db.periodos[db.periodos.length - 1];
+            const dataInicioSugerida = ultimoPeriodo ? new Date(ultimoPeriodo.dataFechamento) : null;
+            const hoje = new Date();
+            const fmt = (d) => d ? `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getFullYear()).slice(2)}` : '?';
+            document.getElementById('fp-nome').value = `Período ${fmt(dataInicioSugerida)} a ${fmt(hoje)}`;
+            document.getElementById('modal-fechar-periodo').classList.add('active');
+        }
+        function confirmarFecharPeriodo() {
+            const nome = document.getElementById('fp-nome').value.trim();
+            if(!nome) return alert('Dê um nome pro período.');
+            if(db.ups.length === 0 && !confirm('Não há nenhuma UP cadastrada no momento. Fechar mesmo assim (período vazio)?')) return;
+
+            db.periodos.push({
+                id: Date.now().toString(),
+                nome,
+                dataFechamento: new Date().toISOString(),
+                snapshot: {
+                    ups: JSON.parse(JSON.stringify(db.ups)),
+                    blocos: JSON.parse(JSON.stringify(db.blocos)),
+                    lancamentos: JSON.parse(JSON.stringify(db.lancamentos))
+                }
+            });
+            saveData();
+            closeModal('modal-fechar-periodo');
+            renderPeriodos();
+            alert('Período fechado e guardado no histórico! Os dados atuais continuam ativos — use "Iniciar Novo Período" quando quiser zerar pra um novo ciclo.');
+        }
+        function iniciarNovoPeriodo() {
+            if(!requireAuth()) return;
+            const aviso = db.periodos.length > 0
+                ? 'Isso vai ZERAR todas as UPs, blocos e lançamentos atuais (as máquinas cadastradas continuam). Já fechou o período atual antes de continuar?'
+                : 'Isso vai ZERAR todas as UPs, blocos e lançamentos atuais (as máquinas cadastradas continuam). Você ainda não fechou nenhum período — os dados atuais serão perdidos se não fechar antes. Continuar mesmo assim?';
+            if(!confirm(aviso)) return;
+            if(!confirm('Confirmar de novo: TODAS as UPs, blocos e lançamentos serão apagados. Essa ação não pode ser desfeita. Continuar?')) return;
+
+            db.ups = [];
+            db.blocos = [];
+            db.lancamentos = [];
+            upSelecionadaParaBlocos = null;
+            blocoSelecionado = null;
+            db.maquinas.forEach(m => m.blocoAtualId = null);
+            saveData();
+            renderAll();
+            if(estaNaView('dashboard')) atualizarDashboard();
+            alert('Novo período iniciado! As UPs foram zeradas. Use "Importar UPs" (aba Importar Excel) pra cadastrar as UPs do novo período rapidamente.');
+            showView('importar');
+        }
+        function renderPeriodos() {
+            const tb = document.getElementById('tb-periodos'); tb.innerHTML = '';
+            if(db.periodos.length === 0) {
+                tb.innerHTML = `<tr><td colspan="6" style="text-align:center; color:var(--text-muted);">Nenhum período fechado ainda.</td></tr>`;
+                return;
+            }
+            [...db.periodos].reverse().forEach(p => {
+                const tr = document.createElement('tr');
+                tr.classList.add('clickable-row');
+                tr.onclick = () => abrirPeriodoDetail(p.id);
+                tr.innerHTML = `
+                    <td><b>${p.nome}</b></td>
+                    <td>${new Date(p.dataFechamento).toLocaleDateString()}</td>
+                    <td>${p.snapshot.ups.length}</td>
+                    <td>${p.snapshot.blocos.length}</td>
+                    <td>${p.snapshot.lancamentos.length}</td>
+                    <td class="row-actions" onclick="event.stopPropagation();">
+                        <button class="btn btn-primary btn-sm" onclick="abrirPeriodoDetail('${p.id}')">Ver</button>
+                        <button class="btn btn-danger btn-sm" onclick="excluirPeriodo('${p.id}')">Excluir</button>
+                    </td>
+                `;
+                tb.appendChild(tr);
+            });
+        }
+        function excluirPeriodo(id) {
+            if(!requireAuth()) return;
+            if(!confirm('Excluir este período do histórico? Isso não afeta os dados atuais, só apaga o registro guardado.')) return;
+            db.periodos = db.periodos.filter(p => p.id !== id);
+            saveData();
+            renderPeriodos();
+        }
+        function abrirPeriodoDetail(id) {
+            const p = db.periodos.find(x => x.id === id);
+            if(!p) return;
+            document.getElementById('pd-title').innerText = p.nome;
+            const tb = document.getElementById('tb-periodo-ups'); tb.innerHTML = '';
+            if(p.snapshot.ups.length === 0) {
+                tb.innerHTML = `<tr><td colspan="7" style="text-align:center; color:var(--text-muted);">Nenhuma UP neste período.</td></tr>`;
+            } else {
+                p.snapshot.ups.forEach(u => {
+                    const arvTotais = u.area * u.arvHa;
+                    const planM3 = arvTotais * u.vmi;
+                    const lancsUP = p.snapshot.lancamentos.filter(l => l.idUP === u.id);
+                    const realizM3 = lancsUP.reduce((s,l) => s + l.m3, 0);
+                    const saldoM3 = planM3 - realizM3;
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `<td><b>${u.nome}</b></td><td>${u.vmi}</td><td>${u.arvHa}</td><td>${u.area}</td><td>${formatarNumero(planM3,2)}</td><td>${formatarNumero(realizM3,2)}</td><td class="${saldoM3<0?'negative-text':'positive-text'}">${formatarNumero(saldoM3,2)}</td>`;
+                    tb.appendChild(tr);
+                });
+            }
+            showView('periodo-detail');
+        }
+
+        // ---------- Importar Excel/CSV: UPs (detecta colunas pelo cabeçalho) ----------
+        function detectarColunasUP(headerRow) {
+            const normalizados = headerRow.map(normalizarTexto);
+            const usadas = new Set();
+            function acharColuna(testes) {
+                for(const teste of testes) {
+                    for(let i = 0; i < normalizados.length; i++) {
+                        if(usadas.has(i)) continue;
+                        const cel = normalizados[i];
+                        if(!cel) continue;
+                        if(teste.exato ? cel === teste.valor : cel.includes(teste.valor)) {
+                            usadas.add(i);
+                            return i;
+                        }
+                    }
+                }
+                return -1;
+            }
+            const idxUP = acharColuna([{valor:'GLEBA', exato:false}, {valor:'UP', exato:true}]);
+            const idxVMI = acharColuna([{valor:'VMI', exato:true}, {valor:'VMI', exato:false}]);
+            const idxArvHa = acharColuna([{valor:'ARV/HA', exato:false}, {valor:'ARVORES/HA', exato:false}, {valor:'ARVHA', exato:false}]);
+            const idxArea = acharColuna([{valor:'AREA', exato:true}, {valor:'AREA', exato:false}]);
+            return { up: idxUP, vmi: idxVMI, arvHa: idxArvHa, area: idxArea };
+        }
+        function processarImportacaoUPs() {
+            if(!requireAuth()) return;
+            const fileInput = document.getElementById('file-importar-ups');
+            const file = fileInput.files[0];
+            if(!file) return alert('Selecione um arquivo.');
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const wb = XLSX.read(data, {type:'array', cellDates: true});
+                    const ws = wb.Sheets[wb.SheetNames[0]];
+                    const linhas = XLSX.utils.sheet_to_json(ws, {header: 1, defval: ''});
+
+                    if(linhas.length < 2) {
+                        document.getElementById('importar-ups-resultado').innerHTML = `<p class="negative-text">A planilha está vazia ou só tem o cabeçalho.</p>`;
+                        return;
+                    }
+
+                    const cabecalho = linhas[0];
+                    const colunas = detectarColunasUP(cabecalho);
+                    const faltando = [];
+                    if(colunas.up === -1) faltando.push('UP/Gleba');
+                    if(colunas.vmi === -1) faltando.push('VMi');
+                    if(colunas.arvHa === -1) faltando.push('Árv/Ha');
+                    if(colunas.area === -1) faltando.push('Área');
+
+                    if(faltando.length > 0) {
+                        const listaCabecalho = cabecalho.map((c, i) => c ? `${XLSX.utils.encode_col(i)}: "${c}"` : null).filter(Boolean).join(', ');
+                        document.getElementById('importar-ups-resultado').innerHTML = `
+                            <p class="negative-text">Não consegui identificar a coluna de: <b>${faltando.join(', ')}</b> na 1ª linha da planilha.</p>
+                            <p style="font-size:0.85rem; color:var(--text-muted); margin-top:6px;">Cabeçalhos encontrados: ${listaCabecalho || '(nenhum texto na 1ª linha)'}</p>
+                        `;
+                        return;
+                    }
+
+                    let criadas = 0, atualizadas = 0, erros = [];
+                    linhas.forEach((linha, i) => {
+                        if(i === 0) return;
+                        const nome = String(linha[colunas.up] || '').trim();
+                        if(!nome) return;
+
+                        const vmi = paraNumero(linha[colunas.vmi]);
+                        const arvHa = paraNumero(linha[colunas.arvHa]);
+                        const area = paraNumero(linha[colunas.area]);
+
+                        if(isNaN(vmi) || isNaN(arvHa) || isNaN(area)) {
+                            erros.push(`Linha ${i+1} (UP ${nome}): valores numéricos inválidos.`);
+                            return;
+                        }
+
+                        const existente = db.ups.find(u => u.nome.toUpperCase() === nome.toUpperCase());
+                        if(existente) {
+                            existente.vmi = vmi; existente.arvHa = arvHa; existente.area = area;
+                            atualizadas++;
+                        } else {
+                            db.ups.push({ id: Date.now().toString() + '_' + i, nome, vmi, arvHa, area });
+                            criadas++;
+                        }
+                    });
+
+                    saveData();
+                    renderAll();
+                    let resumo = `<p><b>${criadas}</b> UP(s) nova(s) cadastrada(s) e <b>${atualizadas}</b> UP(s) existente(s) atualizada(s) — os blocos delas já recalculam automaticamente.</p>`;
+                    if(erros.length > 0) resumo += `<p class="negative-text" style="margin-top:8px;">${erros.length} linha(s) com erro:</p><ul style="margin-left:20px; font-size:0.85rem;">${erros.slice(0,20).map(e=>`<li>${e}</li>`).join('')}</ul>`;
+                    document.getElementById('importar-ups-resultado').innerHTML = resumo;
+                    fileInput.value = '';
+                } catch(err) {
+                    document.getElementById('importar-ups-resultado').innerHTML = `<p class="negative-text">Erro ao processar o arquivo: ${err.message}</p>`;
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
 
         // ---------- PWA: registro do Service Worker ----------
         // Isso é o que permite o app aparecer como "instalável" e funcionar offline.
