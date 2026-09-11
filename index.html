@@ -18,6 +18,9 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-auth-compat.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
 
     <style>
@@ -286,7 +289,13 @@
 
             <div class="grid-cards">
                 <div class="card" style="grid-column: span 2;">
-                    <h3>Desempenho Geral (últimos 7 dias com lançamento)</h3>
+                    <h3 style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+                        <span>Desempenho Geral</span>
+                        <div style="display:flex; gap:6px;">
+                            <button class="btn btn-primary btn-sm" id="btn-graf-diario" onclick="mudarVisaoGrafico('diario')">Diário</button>
+                            <button class="btn back-btn btn-sm" id="btn-graf-mensal" onclick="mudarVisaoGrafico('mensal')">Mensal</button>
+                        </div>
+                    </h3>
                     <div class="chart-container">
                         <canvas id="chartGeral"></canvas>
                     </div>
@@ -426,9 +435,12 @@
 
         <section id="view-up-detail" class="view">
             <div class="card" style="margin-bottom: 20px;">
-                <h3 style="display:flex; justify-content:space-between; align-items:center;">
+                <h3 style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
                     <span id="upd-title">UP</span>
-                    <button class="btn back-btn" onclick="showView('ups')">⬅ Voltar para UPs</button>
+                    <div style="display:flex; gap:8px;">
+                        <button class="btn btn-sm" style="background:#25D366; color:white;" onclick="compartilharUPWhatsapp()"><svg width="16" height="16"><use href="#icon-whatsapp"></use></svg> Compartilhar</button>
+                        <button class="btn back-btn" onclick="showView('ups')">⬅ Voltar para UPs</button>
+                    </div>
                 </h3>
                 <div class="grid-cards" style="margin-top:15px; margin-bottom:0;">
                     <div class="card"><h3>VMi</h3><div class="value" id="upd-vmi">0</div></div>
@@ -471,7 +483,8 @@
             <div class="card" style="margin-bottom: 20px;">
                 <h3 style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
                     <span id="bd-title">Bloco</span>
-                    <div style="display:flex; gap:8px;">
+                    <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                        <button class="btn btn-sm" style="background:#25D366; color:white;" onclick="compartilharBlocoWhatsapp()"><svg width="16" height="16"><use href="#icon-whatsapp"></use></svg> Compartilhar</button>
                         <button class="btn btn-primary btn-sm" id="bd-btn-iniciar" style="display:none;" onclick="iniciarColheitaBloco(blocoSelecionado.id)">Iniciar Colheita</button>
                         <button class="btn btn-danger btn-sm" onclick="finalizarBlocoAtualDetail()">Finalizar Bloco</button>
                         <button class="btn back-btn" onclick="voltarParaUPDetail()">⬅ Voltar para UP</button>
@@ -506,12 +519,12 @@
             <div class="card">
                 <h3>Fechamento de Período</h3>
                 <p style="font-size:0.85rem; color:var(--text-muted); margin:10px 0 15px; line-height:1.5;">
-                    <b>Fechar Período</b> guarda uma cópia de tudo (UPs, blocos e lançamentos) num histórico — nada é apagado, você continua lançando normalmente depois.<br>
-                    <b>Iniciar Novo Período</b> zera as UPs, blocos e lançamentos atuais pra começar do zero (as máquinas cadastradas continuam). Recomendado só depois de fechar o período atual.
+                    <b>Fechar Período</b> guarda no histórico uma cópia de tudo — UPs, blocos, lançamentos e a produção de cada máquina — e já <b>zera tudo</b> na hora pra você começar o próximo período do zero (as máquinas cadastradas continuam, só a produção delas some da tela).<br>
+                    <b>Zerar sem Arquivar</b> é só pra emergência (ex: apagar dados de teste) — zera tudo sem guardar nada no histórico.
                 </p>
                 <div style="display:flex; gap:10px; flex-wrap:wrap;">
-                    <button class="btn btn-primary" onclick="abrirModalFecharPeriodo()"><svg width="18" height="18" fill="white"><use href="#icon-calendar"></use></svg> Fechar Período Atual</button>
-                    <button class="btn btn-danger" onclick="iniciarNovoPeriodo()"><svg width="18" height="18" fill="white"><use href="#icon-close"></use></svg> Iniciar Novo Período</button>
+                    <button class="btn btn-primary" onclick="abrirModalFecharPeriodo()"><svg width="18" height="18" fill="white"><use href="#icon-calendar"></use></svg> Fechar Período e Iniciar Novo</button>
+                    <button class="btn btn-danger" onclick="iniciarNovoPeriodo()"><svg width="18" height="18" fill="white"><use href="#icon-close"></use></svg> Zerar sem Arquivar</button>
                 </div>
             </div>
             <div class="card">
@@ -541,6 +554,15 @@
                     <table class="data-table">
                         <thead><tr><th>UP</th><th>VMi</th><th>Árv/Ha</th><th>Área</th><th>Planejado M³</th><th>Realizado M³</th><th>Saldo M³</th></tr></thead>
                         <tbody id="tb-periodo-ups"></tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="card">
+                <h3>Produção por Máquina neste Período</h3>
+                <div style="overflow-x: auto; margin-top:15px;">
+                    <table class="data-table">
+                        <thead><tr><th>Máquina</th><th>Árvores</th><th>M³</th></tr></thead>
+                        <tbody id="tb-periodo-maquinas"></tbody>
                     </table>
                 </div>
             </div>
@@ -640,6 +662,15 @@
                         <input type="url" class="form-control" id="conf-sheets" placeholder="Cole o link do Apps Script aqui...">
                     </div>
                     <button class="btn btn-primary" onclick="salvarLinkSheets()">Salvar Link</button>
+                </div>
+                <div class="card">
+                    <h3>Sincronização Firebase (Tempo Real)</h3>
+                    <p style="font-size: 0.8rem; margin-bottom: 10px; color: var(--text-muted);" id="firebase-sync-status">⚪ Iniciando...</p>
+                    <p style="font-size: 0.75rem; margin-bottom: 12px; color: var(--text-muted);">Sincroniza automaticamente em segundo plano. Funciona 100% offline — a nuvem é só um extra pra ver os dados em outro aparelho.</p>
+                    <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                        <button class="btn btn-primary" onclick="sincronizarParaFirebase(false)">Enviar Agora</button>
+                        <button class="btn back-btn" onclick="sincronizarDeFirebase(false)">Buscar da Nuvem</button>
+                    </div>
                 </div>
                 <div class="card">
                     <h3>Acesso / Autenticação</h3>
@@ -801,10 +832,11 @@
                 if(m.blocoAtualId === undefined) m.blocoAtualId = null;
                 if(m.prefixo === undefined) m.prefixo = '';
             });
-            saveData();
+            saveData(false);
             checkAuth();
             renderAll();
             definirDataLancamentoHoje();
+            inicializarFirebase();
         }
         // Preenche o campo de data do lançamento com a data de hoje
         function definirDataLancamentoHoje() {
@@ -816,7 +848,167 @@
             const dd = String(hoje.getDate()).padStart(2, '0');
             campo.value = `${yyyy}-${mm}-${dd}`;
         }
-        function saveData() { localStorage.setItem('fontech_blocos_db', JSON.stringify(db)); }
+        function saveData(agendarSync = true) {
+            localStorage.setItem('fontech_blocos_db', JSON.stringify(db));
+            if(agendarSync) agendarSyncFirebase();
+        }
+
+        // ========== SINCRONIZAÇÃO COM FIREBASE (nuvem) ==========
+        // O projeto "abastecimentosp3" é COMPARTILHADO com os apps Abastecimento e Qualidade
+        // SP3. Pra nunca colidir com as coleções deles (Abastecimento usa nomes sem prefixo
+        // como "machines"/"fuelTanks"; Qualidade usa prefixo "qualidade_"), TODAS as coleções
+        // do Controle de Blocos usam o prefixo "blocos_". O app continua funcionando 100%
+        // offline via localStorage mesmo sem internet — a nuvem é só uma camada extra por cima.
+        const FIREBASE_CONFIG = {
+            apiKey: "AIzaSyCFOeiChgHMwdEV7Psb-A-VuY1WmoE2NT0",
+            authDomain: "abastecimentosp3.firebaseapp.com",
+            projectId: "abastecimentosp3",
+            storageBucket: "abastecimentosp3.firebasestorage.app",
+            messagingSenderId: "382613220370",
+            appId: "1:382613220370:web:dff5fdf0e8736380487ccb"
+        };
+        const COLECOES_FIREBASE = {
+            ups: 'blocos_ups',
+            blocos: 'blocos_blocos',
+            maquinas: 'blocos_maquinas',
+            lancamentos: 'blocos_lancamentos'
+        };
+        let firestore = null;
+        let firebaseAuthPronto = null;
+        let timerSyncFirebase = null;
+        // Fila de sincronização: garante que push e pull NUNCA se pisam. Em vez de uma trava
+        // simples que descartaria silenciosamente uma sincronização se outra já estivesse
+        // rodando (ex: pull automático do início ainda em andamento quando o usuário edita
+        // algo), cada chamada só espera a anterior terminar e roda depois — nada se perde.
+        let filaSyncFirebase = Promise.resolve();
+        function executarComFilaFirebase(fn) {
+            const proxima = filaSyncFirebase.then(fn, fn);
+            filaSyncFirebase = proxima.catch(() => {});
+            return proxima;
+        }
+
+        function firebaseAtivo() { return typeof firebase !== 'undefined' && !!firestore; }
+
+        function inicializarFirebase() {
+            if(typeof firebase === 'undefined') {
+                console.warn('SDK do Firebase não carregou. O app continua funcionando 100% offline.');
+                atualizarIndicadorSync();
+                return;
+            }
+            try {
+                if(!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
+                firestore = firebase.firestore();
+                firestore.enablePersistence({ synchronizeTabs: true }).catch(() => {});
+            } catch(err) {
+                console.error('Falha ao iniciar Firebase:', err);
+                firestore = null;
+            }
+            window.addEventListener('online', () => { atualizarIndicadorSync(); sincronizarDeFirebase(true); });
+            window.addEventListener('offline', () => atualizarIndicadorSync());
+            atualizarIndicadorSync();
+            if(navigator.onLine) sincronizarDeFirebase(true);
+            setInterval(() => { if(navigator.onLine) sincronizarDeFirebase(true); }, 3 * 60 * 1000);
+        }
+        function garantirAuthFirebase() {
+            if(!firebaseAuthPronto) {
+                firebaseAuthPronto = new Promise((resolve, reject) => {
+                    firebase.auth().onAuthStateChanged(user => { if(user) resolve(user); });
+                    firebase.auth().signInAnonymously().catch(reject);
+                });
+            }
+            return firebaseAuthPronto;
+        }
+        function agendarSyncFirebase() {
+            if(!firebaseAtivo() || !navigator.onLine) return;
+            clearTimeout(timerSyncFirebase);
+            timerSyncFirebase = setTimeout(() => sincronizarParaFirebase(true), 4000);
+        }
+        async function enviarColecaoFirebase(nomeColecao, itens) {
+            const TAMANHO_LOTE = 400; // limite do Firestore é 500 operações por batch
+            for(let i = 0; i < itens.length; i += TAMANHO_LOTE) {
+                const lote = itens.slice(i, i + TAMANHO_LOTE);
+                const batch = firestore.batch();
+                lote.forEach(item => { if(item && item.id) batch.set(firestore.collection(nomeColecao).doc(String(item.id)), item); });
+                await batch.commit();
+            }
+        }
+        function sincronizarParaFirebase(silencioso = false) {
+            if(!navigator.onLine) { if(!silencioso) alert('Sem internet agora. Os dados continuam salvos aqui no aparelho e serão enviados assim que a conexão voltar.'); return Promise.resolve(); }
+            if(!firebaseAtivo()) { if(!silencioso) alert('Firebase não está disponível no momento.'); return Promise.resolve(); }
+            return executarComFilaFirebase(async () => {
+                atualizarIndicadorSync('enviando');
+                try {
+                    await garantirAuthFirebase();
+                    await enviarColecaoFirebase(COLECOES_FIREBASE.ups, db.ups);
+                    await enviarColecaoFirebase(COLECOES_FIREBASE.blocos, db.blocos);
+                    await enviarColecaoFirebase(COLECOES_FIREBASE.maquinas, db.maquinas);
+                    await enviarColecaoFirebase(COLECOES_FIREBASE.lancamentos, db.lancamentos);
+                    atualizarIndicadorSync('ok');
+                    if(!silencioso) alert('Enviado pra nuvem com sucesso!');
+                } catch(err) {
+                    console.error('Erro ao sincronizar para o Firebase:', err);
+                    atualizarIndicadorSync('erro');
+                    if(!silencioso) alert('Erro ao enviar pra nuvem: ' + err.message);
+                }
+            });
+        }
+        // Junta os documentos vindos do Firestore na lista local: atualiza quem já existe (por
+        // id), adiciona quem é novo. NUNCA remove localmente o que não veio na resposta — evita
+        // perda de dado se outro aparelho ainda não tiver sincronizado o próprio envio.
+        function mesclarColecaoRemota(listaLocal, snapshot) {
+            const porId = {};
+            listaLocal.forEach(item => { if(item && item.id) porId[item.id] = item; });
+            snapshot.forEach(doc => {
+                const remoto = doc.data();
+                if(!remoto || !remoto.id) return;
+                const existente = porId[remoto.id];
+                if(existente) Object.assign(existente, remoto);
+                else { listaLocal.push(remoto); porId[remoto.id] = remoto; }
+            });
+        }
+        function sincronizarDeFirebase(silencioso = false) {
+            if(!navigator.onLine) { if(!silencioso) alert('Sem internet agora.'); return Promise.resolve(); }
+            if(!firebaseAtivo()) { if(!silencioso) alert('Firebase não está disponível no momento.'); return Promise.resolve(); }
+            return executarComFilaFirebase(async () => {
+                atualizarIndicadorSync('enviando');
+                try {
+                    await garantirAuthFirebase();
+                    const [snapUps, snapBlocos, snapMaquinas, snapLanc] = await Promise.all([
+                        firestore.collection(COLECOES_FIREBASE.ups).get(),
+                        firestore.collection(COLECOES_FIREBASE.blocos).get(),
+                        firestore.collection(COLECOES_FIREBASE.maquinas).get(),
+                        firestore.collection(COLECOES_FIREBASE.lancamentos).get()
+                    ]);
+                    mesclarColecaoRemota(db.ups, snapUps);
+                    mesclarColecaoRemota(db.blocos, snapBlocos);
+                    mesclarColecaoRemota(db.maquinas, snapMaquinas);
+                    mesclarColecaoRemota(db.lancamentos, snapLanc);
+                    saveData(false); // false = não reagenda push, evita loop com o pull
+                    renderAll();
+                    if(estaNaView('dashboard')) atualizarDashboard();
+                    atualizarIndicadorSync('ok');
+                    if(!silencioso) alert('Dados atualizados com o que estava na nuvem!');
+                } catch(err) {
+                    console.error('Erro ao puxar do Firebase:', err);
+                    atualizarIndicadorSync('erro');
+                    if(!silencioso) alert('Erro ao buscar da nuvem: ' + err.message);
+                }
+            });
+        }
+        function atualizarIndicadorSync(estadoForcado) {
+            const el = document.getElementById('firebase-sync-status');
+            if(!el) return;
+            let estado = estadoForcado;
+            if(!estado) estado = !navigator.onLine ? 'offline' : (firebaseAtivo() ? 'ok' : 'indisponivel');
+            const textos = {
+                offline: '📴 Offline — sincroniza quando a internet voltar',
+                enviando: '🔄 Sincronizando com a nuvem...',
+                ok: '☁️ Sincronizado com a nuvem',
+                erro: '⚠️ Erro na última sincronização',
+                indisponivel: '⚪ Nuvem não conectada'
+            };
+            el.innerText = textos[estado] || '';
+        }
 
         function checkAuth() {
             const btn = document.getElementById('txt-user');
@@ -1723,6 +1915,62 @@
         }
 
         // ---------- Dashboard ----------
+        let visaoGraficoAtual = 'diario';
+        // Agrupa lançamentos por dia (AAAA-MM-DD) ou por mês (AAAA-MM), sempre ordenando
+        // pela chave cronológica real (nunca pela label formatada, que pode enganar).
+        function agruparLancamentosPorPeriodo(tipo) {
+            const grupos = {};
+            const nomesMes = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+            db.lancamentos.forEach(l => {
+                const d = new Date(l.data);
+                if(isNaN(d.getTime())) return; // ignora datas corrompidas em vez de quebrar o gráfico
+                let chave, label;
+                if(tipo === 'mensal') {
+                    chave = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
+                    label = nomesMes[d.getMonth()] + '/' + d.getFullYear();
+                } else {
+                    chave = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+                    label = String(d.getDate()).padStart(2,'0') + '/' + String(d.getMonth()+1).padStart(2,'0');
+                }
+                if(!grupos[chave]) grupos[chave] = { label, m3: 0 };
+                grupos[chave].m3 += l.m3;
+            });
+            const chavesOrdenadas = Object.keys(grupos).sort();
+            const limite = tipo === 'mensal' ? 12 : 30;
+            const ultimasChaves = chavesOrdenadas.slice(-limite);
+            return {
+                labels: ultimasChaves.map(k => grupos[k].label),
+                valores: ultimasChaves.map(k => grupos[k].m3)
+            };
+        }
+        function mudarVisaoGrafico(tipo) {
+            visaoGraficoAtual = tipo;
+            document.getElementById('btn-graf-diario').className = tipo === 'diario' ? 'btn btn-primary btn-sm' : 'btn back-btn btn-sm';
+            document.getElementById('btn-graf-mensal').className = tipo === 'mensal' ? 'btn btn-primary btn-sm' : 'btn back-btn btn-sm';
+            renderGraficoDashboard();
+        }
+        function renderGraficoDashboard() {
+            const { labels, valores } = agruparLancamentosPorPeriodo(visaoGraficoAtual);
+            if(myChart) myChart.destroy();
+            const ctx = document.getElementById('chartGeral').getContext('2d');
+            myChart = new Chart(ctx, {
+                type: visaoGraficoAtual === 'mensal' ? 'bar' : 'line',
+                data: {
+                    labels: labels.length ? labels : [visaoGraficoAtual === 'mensal' ? 'Este mês' : 'Hoje'],
+                    datasets: [{
+                        label: visaoGraficoAtual === 'mensal' ? 'Produção M³ Mensal' : 'Produção M³ Diária',
+                        data: valores.length ? valores : [0],
+                        borderColor: '#2e8b57', backgroundColor: 'rgba(46, 139, 87, 0.2)',
+                        fill: true, tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: { y: { beginAtZero: true } }
+                }
+            });
+        }
         function atualizarDashboard() {
             const hoje = new Date().toLocaleDateString();
             const lancHj = db.lancamentos.filter(l => new Date(l.data).toLocaleDateString() === hoje);
@@ -1809,29 +2057,7 @@
                 </div>
             `).join('') : '<p style="color:var(--text-muted); font-size:0.9rem;">Nenhuma máquina com produção ainda.</p>';
 
-            if(myChart) myChart.destroy();
-            const ctx = document.getElementById('chartGeral').getContext('2d');
-            const ultimasChaves = chavesOrdenadas.slice(-7);
-            const ultimosDias = ultimasChaves.map(k => porDia[k].label);
-            const dadosGraf = ultimasChaves.map(k => porDia[k].m3);
-
-            myChart = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: ultimosDias.length ? ultimosDias : ['Hoje'],
-                    datasets: [{
-                        label: 'Produção M³ Diária',
-                        data: dadosGraf.length ? dadosGraf : [0],
-                        borderColor: '#2e8b57', backgroundColor: 'rgba(46, 139, 87, 0.2)',
-                        fill: true, tension: 0.4
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: { y: { beginAtZero: true } }
-                }
-            });
+            renderGraficoDashboard();
 
             renderLunaInsights(bAtivos, ranking, chavesOrdenadas.length);
         }
@@ -2052,6 +2278,46 @@
             txt += '\n';
             relatorioAtual.linhas.slice(0,20).forEach(linha => txt += linha.join(' | ') + '\n');
             if(relatorioAtual.linhas.length > 20) txt += `\n_...e mais ${relatorioAtual.linhas.length-20} registro(s)._`;
+            window.open('https://api.whatsapp.com/send?text=' + encodeURIComponent(txt));
+        }
+        function compartilharUPWhatsapp() {
+            if(!upSelecionadaParaBlocos) return;
+            const u = upSelecionadaParaBlocos;
+            const calc = calcUP(u);
+            const blocosDaUP = db.blocos.filter(b => b.idUP === u.id);
+            const realizM3 = db.lancamentos.filter(l => l.idUP === u.id).reduce((s,l) => s + l.m3, 0);
+            const saldoM3 = calc.m3Totais - realizM3;
+
+            let txt = `*UP ${u.nome}*\n\n`;
+            txt += `VMi: ${u.vmi} | Árv/Ha: ${u.arvHa} | Área: ${u.area} ha\n`;
+            txt += `Planejado: ${formatarNumero(calc.arvTotais,0)} árv / ${formatarNumero(calc.m3Totais,2)} m³\n`;
+            txt += `Realizado: ${formatarNumero(realizM3,2)} m³\n`;
+            txt += `Saldo: ${formatarNumero(saldoM3,2)} m³\n\n`;
+            txt += `*Blocos (${blocosDaUP.length}):*\n`;
+            blocosDaUP.forEach(b => {
+                const c = calcBloco(b);
+                txt += `• ${b.nome} (${b.status}) — ${formatarNumero(c.realizM3,2)}/${formatarNumero(c.planM3,2)} m³\n`;
+            });
+            window.open('https://api.whatsapp.com/send?text=' + encodeURIComponent(txt));
+        }
+        function compartilharBlocoWhatsapp() {
+            if(!blocoSelecionado) return;
+            const b = blocoSelecionado;
+            const c = calcBloco(b);
+            let txt = `*Bloco ${b.nome}* (UP ${c.up.nome})\n\n`;
+            txt += `Status: ${b.status}\n`;
+            txt += `Área: ${b.area} ha\n`;
+            txt += `Planejado: ${formatarNumero(c.planArv,0)} árv / ${formatarNumero(c.planM3,2)} m³\n`;
+            txt += `Realizado: ${formatarNumero(c.realizArv,0)} árv / ${formatarNumero(c.realizM3,2)} m³\n`;
+            txt += `Saldo: ${formatarNumero(c.saldoM3,2)} m³ (${formatarNumero(c.perColhido,1)}% colhido)\n\n`;
+            const lancsRecentes = db.lancamentos.filter(l => l.idBloco === b.id).sort((a,b2) => new Date(b2.data)-new Date(a.data)).slice(0,10);
+            if(lancsRecentes.length > 0) {
+                txt += `*Últimos lançamentos:*\n`;
+                lancsRecentes.forEach(l => {
+                    const m = db.maquinas.find(x => x.id === l.idMaquina);
+                    txt += `• ${new Date(l.data).toLocaleDateString()} — ${formatarMaquina(m)} — ${l.arvores} árv / ${formatarNumero(l.m3,2)} m³\n`;
+                });
+            }
             window.open('https://api.whatsapp.com/send?text=' + encodeURIComponent(txt));
         }
 
@@ -2280,6 +2546,19 @@
             const nome = document.getElementById('fp-nome').value.trim();
             if(!nome) return alert('Dê um nome pro período.');
             if(db.ups.length === 0 && !confirm('Não há nenhuma UP cadastrada no momento. Fechar mesmo assim (período vazio)?')) return;
+            if(!confirm(`Isso vai arquivar "${nome}" no histórico E ZERAR agora as UPs, blocos, lançamentos e a produção de todas as máquinas (as máquinas continuam cadastradas, só a produção delas zera). Essa ação não pode ser desfeita. Continuar?`)) return;
+
+            // Resumo de produção por máquina no fechamento — inclui o nome (não só o id) pra
+            // continuar legível mesmo se a máquina for renomeada ou excluída depois.
+            const porMaquina = db.maquinas.map(m => {
+                const lancsM = db.lancamentos.filter(l => l.idMaquina === m.id);
+                return {
+                    idMaquina: m.id,
+                    nome: formatarMaquina(m),
+                    totArv: lancsM.reduce((s,l) => s + l.arvores, 0),
+                    totM3: lancsM.reduce((s,l) => s + l.m3, 0)
+                };
+            }).filter(r => r.totArv > 0);
 
             db.periodos.push({
                 id: Date.now().toString(),
@@ -2288,21 +2567,32 @@
                 snapshot: {
                     ups: JSON.parse(JSON.stringify(db.ups)),
                     blocos: JSON.parse(JSON.stringify(db.blocos)),
-                    lancamentos: JSON.parse(JSON.stringify(db.lancamentos))
+                    lancamentos: JSON.parse(JSON.stringify(db.lancamentos)),
+                    porMaquina
                 }
             });
+
+            // Zera tudo pro próximo período, na mesma ação (produção das máquinas some da tela
+            // porque os totais são sempre calculados a partir de db.lancamentos, que fica vazio).
+            db.ups = [];
+            db.blocos = [];
+            db.lancamentos = [];
+            upSelecionadaParaBlocos = null;
+            blocoSelecionado = null;
+            db.maquinas.forEach(m => m.blocoAtualId = null);
+
             saveData();
             closeModal('modal-fechar-periodo');
+            renderAll();
             renderPeriodos();
-            alert('Período fechado e guardado no histórico! Os dados atuais continuam ativos — use "Iniciar Novo Período" quando quiser zerar pra um novo ciclo.');
+            if(estaNaView('dashboard')) atualizarDashboard();
+            alert(`Período "${nome}" arquivado com sucesso! UPs, blocos, lançamentos e produção das máquinas foram zerados. Use "Importar UPs" pra cadastrar as UPs do novo período.`);
+            showView('importar');
         }
         function iniciarNovoPeriodo() {
             if(!requireAuth()) return;
-            const aviso = db.periodos.length > 0
-                ? 'Isso vai ZERAR todas as UPs, blocos e lançamentos atuais (as máquinas cadastradas continuam). Já fechou o período atual antes de continuar?'
-                : 'Isso vai ZERAR todas as UPs, blocos e lançamentos atuais (as máquinas cadastradas continuam). Você ainda não fechou nenhum período — os dados atuais serão perdidos se não fechar antes. Continuar mesmo assim?';
-            if(!confirm(aviso)) return;
-            if(!confirm('Confirmar de novo: TODAS as UPs, blocos e lançamentos serão apagados. Essa ação não pode ser desfeita. Continuar?')) return;
+            if(!confirm('ATENÇÃO: isso vai ZERAR todas as UPs, blocos, lançamentos e a produção das máquinas SEM guardar nada no histórico. Use "Fechar Período e Iniciar Novo" se quiser manter o registro. Confirma que quer zerar sem arquivar?')) return;
+            if(!confirm('Confirmar de novo: essa ação não pode ser desfeita. Continuar?')) return;
 
             db.ups = [];
             db.blocos = [];
@@ -2313,7 +2603,7 @@
             saveData();
             renderAll();
             if(estaNaView('dashboard')) atualizarDashboard();
-            alert('Novo período iniciado! As UPs foram zeradas. Use "Importar UPs" (aba Importar Excel) pra cadastrar as UPs do novo período rapidamente.');
+            alert('Tudo zerado! As UPs foram limpas. Use "Importar UPs" (aba Importar Excel) pra cadastrar as UPs do novo período rapidamente.');
             showView('importar');
         }
         function renderPeriodos() {
@@ -2367,6 +2657,18 @@
                 });
             }
             showView('periodo-detail');
+
+            const tbMaq = document.getElementById('tb-periodo-maquinas'); tbMaq.innerHTML = '';
+            const porMaquina = p.snapshot.porMaquina;
+            if(!porMaquina || porMaquina.length === 0) {
+                tbMaq.innerHTML = `<tr><td colspan="3" style="text-align:center; color:var(--text-muted);">${porMaquina ? 'Nenhuma máquina com produção neste período.' : 'Este período foi fechado numa versão anterior do app, sem esse resumo.'}</td></tr>`;
+            } else {
+                [...porMaquina].sort((a,b) => b.totM3 - a.totM3).forEach(r => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `<td><b>${r.nome}</b></td><td>${formatarNumero(r.totArv,0)}</td><td>${formatarNumero(r.totM3,2)}</td>`;
+                    tbMaq.appendChild(tr);
+                });
+            }
         }
 
         // ---------- Importar Excel/CSV: UPs (detecta colunas pelo cabeçalho) ----------
