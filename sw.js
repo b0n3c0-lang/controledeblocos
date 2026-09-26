@@ -2,7 +2,7 @@
 // IMPORTANTE: aumente o número da versão (v1 -> v2 -> v3...) toda vez que
 // publicar uma atualização do app no GitHub. Isso garante que o cache antigo
 // seja descartado e todo mundo receba a versão nova.
-const CACHE_NAME = 'controle-blocos-v1.5';
+const CACHE_NAME = 'controle-blocos-v1.6';
 
 const urlsToCache = [
     './',
