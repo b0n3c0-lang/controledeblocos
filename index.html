@@ -657,13 +657,6 @@
                     <button class="btn btn-primary" onclick="toggleTheme()"><svg width="18" height="18" fill="white"><use href="#icon-moon"></use></svg> Alternar Claro/Escuro</button>
                 </div>
                 <div class="card">
-                    <h3>Sincronização Nuvem (Google Sheets)</h3>
-                    <div class="form-group">
-                        <input type="url" class="form-control" id="conf-sheets" placeholder="Cole o link do Apps Script aqui...">
-                    </div>
-                    <button class="btn btn-primary" onclick="salvarLinkSheets()">Salvar Link</button>
-                </div>
-                <div class="card">
                     <h3>Sincronização Firebase (Tempo Real)</h3>
                     <p style="font-size: 0.8rem; margin-bottom: 10px; color: var(--text-muted);" id="firebase-sync-status">⚪ Iniciando...</p>
                     <p style="font-size: 0.75rem; margin-bottom: 12px; color: var(--text-muted);">Sincroniza automaticamente em segundo plano. Funciona 100% offline — a nuvem é só um extra pra ver os dados em outro aparelho.</p>
@@ -736,6 +729,7 @@
             <div class="modal-header"><h3 id="modal-maquina-titulo">Cadastrar Máquina</h3><button class="close-btn" onclick="closeModal('modal-maquina')"><svg width="24" height="24" fill="currentColor"><use href="#icon-close"></use></svg></button></div>
             <div class="form-group"><label>Prefixo (número/código curto)</label><input type="text" class="form-control" id="cad-maq-prefixo" placeholder="Ex: 672" style="text-transform: uppercase;"></div>
             <div class="form-group"><label>Nome</label><input type="text" class="form-control" id="cad-maq-nome" placeholder="Ex: Sertaneja" style="text-transform: uppercase;"></div>
+            <div class="form-group"><label>Link do WhatsApp (grupo ou número)</label><input type="text" class="form-control" id="cad-maq-whatsapp" placeholder="https://chat.whatsapp.com/... ou https://wa.me/55..."></div>
             <button class="btn btn-primary" style="width:100%; justify-content:center;" onclick="salvarMaquina()">Salvar Máquina</button>
         </div>
     </div>
@@ -796,6 +790,14 @@
         </div>
     </div>
 
+    <div class="modal" id="modal-selecionar-maquina-whats">
+        <div class="modal-content">
+            <div class="modal-header"><h3>Enviar Para Qual Máquina?</h3><button class="close-btn" onclick="closeModal('modal-selecionar-maquina-whats')"><svg width="24" height="24" fill="currentColor"><use href="#icon-close"></use></svg></button></div>
+            <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:12px;">Mais de uma máquina trabalhou aqui — escolha pra qual grupo/número enviar:</p>
+            <div id="lista-maquinas-whats"></div>
+        </div>
+    </div>
+
     <script>
         let db = {
             ups: [],        // { id, nome, vmi, arvHa, area }
@@ -826,11 +828,19 @@
                 db.users.push({ id: 'admin', senha: '123' });
             }
             if(!db.periodos) db.periodos = [];
-            // Migração: garante campos novos em dados salvos anteriormente
+            // Migração: garante campos novos em dados salvos anteriormente. O campo
+            // dataFechamento que faltava aqui era a causa do erro na sincronização Firebase:
+            // blocos antigos sem esse campo ficavam com valor "undefined", e o Firestore
+            // recusa gravar qualquer campo "undefined" (dá erro e trava a sincronização toda).
             db.maquinas.forEach(m => {
                 if(!m.status) m.status = 'Ativa';
                 if(m.blocoAtualId === undefined) m.blocoAtualId = null;
                 if(m.prefixo === undefined) m.prefixo = '';
+                if(m.whatsappLink === undefined) m.whatsappLink = '';
+            });
+            db.blocos.forEach(b => {
+                if(!b.status) b.status = 'Colhendo';
+                if(b.dataFechamento === undefined) b.dataFechamento = null;
             });
             saveData(false);
             checkAuth();
@@ -923,12 +933,19 @@
             clearTimeout(timerSyncFirebase);
             timerSyncFirebase = setTimeout(() => sincronizarParaFirebase(true), 4000);
         }
+        // Troca qualquer campo "undefined" por null antes de mandar pro Firestore — ele recusa
+        // gravar undefined e quebra a sincronização inteira por causa de UM campo só faltando.
+        function limparUndefinedParaFirestore(item) {
+            const limpo = {};
+            Object.keys(item).forEach(k => { limpo[k] = item[k] === undefined ? null : item[k]; });
+            return limpo;
+        }
         async function enviarColecaoFirebase(nomeColecao, itens) {
             const TAMANHO_LOTE = 400; // limite do Firestore é 500 operações por batch
             for(let i = 0; i < itens.length; i += TAMANHO_LOTE) {
                 const lote = itens.slice(i, i + TAMANHO_LOTE);
                 const batch = firestore.batch();
-                lote.forEach(item => { if(item && item.id) batch.set(firestore.collection(nomeColecao).doc(String(item.id)), item); });
+                lote.forEach(item => { if(item && item.id) batch.set(firestore.collection(nomeColecao).doc(String(item.id)), limparUndefinedParaFirestore(item)); });
                 await batch.commit();
             }
         }
@@ -1460,12 +1477,14 @@
             const m = id ? db.maquinas.find(x => x.id === id) : null;
             document.getElementById('cad-maq-prefixo').value = m ? (m.prefixo || '') : '';
             document.getElementById('cad-maq-nome').value = m ? m.nome : '';
+            document.getElementById('cad-maq-whatsapp').value = m ? (m.whatsappLink || '') : '';
             document.getElementById('modal-maquina-titulo').innerText = m ? 'Editar Máquina' : 'Cadastrar Máquina';
             document.getElementById('modal-maquina').classList.add('active');
         }
         function salvarMaquina() {
             const prefixo = document.getElementById('cad-maq-prefixo').value.trim().toUpperCase();
             const n = document.getElementById('cad-maq-nome').value.trim().toUpperCase();
+            const whatsappLink = document.getElementById('cad-maq-whatsapp').value.trim();
             if(!n) return alert("Informe o nome da máquina.");
             const existenteNome = db.maquinas.find(m => m.nome === n && m.id !== maquinaEditId);
             if(existenteNome) return alert("Já existe uma máquina com esse nome.");
@@ -1476,9 +1495,9 @@
 
             if(maquinaEditId) {
                 const m = db.maquinas.find(x => x.id === maquinaEditId);
-                if(m) { m.nome = n; m.prefixo = prefixo; }
+                if(m) { m.nome = n; m.prefixo = prefixo; m.whatsappLink = whatsappLink; }
             } else {
-                db.maquinas.push({ id: Date.now().toString(), prefixo: prefixo, nome: n, status: 'Ativa', blocoAtualId: null });
+                db.maquinas.push({ id: Date.now().toString(), prefixo: prefixo, nome: n, status: 'Ativa', blocoAtualId: null, whatsappLink: whatsappLink });
             }
             saveData(); closeModal('modal-maquina'); renderMaquinas();
             maquinaEditId = null;
@@ -2278,7 +2297,54 @@
             txt += '\n';
             relatorioAtual.linhas.slice(0,20).forEach(linha => txt += linha.join(' | ') + '\n');
             if(relatorioAtual.linhas.length > 20) txt += `\n_...e mais ${relatorioAtual.linhas.length-20} registro(s)._`;
-            window.open('https://api.whatsapp.com/send?text=' + encodeURIComponent(txt));
+            window.open('https://wa.me/?text=' + encodeURIComponent(txt));
+        }
+        // ---------- Roteamento inteligente de WhatsApp por máquina ----------
+        function encontrarMaquinasEnvolvidasNoBloco(bloco) {
+            const ids = new Set();
+            db.lancamentos.filter(l => l.idBloco === bloco.id).forEach(l => ids.add(l.idMaquina));
+            db.maquinas.filter(m => m.blocoAtualId === bloco.id).forEach(m => ids.add(m.id));
+            return db.maquinas.filter(m => ids.has(m.id));
+        }
+        function encontrarMaquinasEnvolvidasNaUP(up) {
+            const ids = new Set();
+            db.lancamentos.filter(l => l.idUP === up.id).forEach(l => ids.add(l.idMaquina));
+            db.blocos.filter(b => b.idUP === up.id).forEach(b => {
+                db.maquinas.filter(m => m.blocoAtualId === b.id).forEach(m => ids.add(m.id));
+            });
+            return db.maquinas.filter(m => ids.has(m.id));
+        }
+        // wa.me e api.whatsapp.com aceitam texto pré-preenchido via URL; link de convite de
+        // grupo (chat.whatsapp.com) não aceita — nesse caso copia o texto e avisa pra colar.
+        function montarLinkWhatsapp(link, texto) {
+            if(!link) return 'https://wa.me/?text=' + encodeURIComponent(texto);
+            if(link.includes('wa.me') || link.includes('api.whatsapp.com')) {
+                const separador = link.includes('?') ? '&' : '?';
+                return link + separador + 'text=' + encodeURIComponent(texto);
+            }
+            if(navigator.clipboard) navigator.clipboard.writeText(texto).catch(() => {});
+            alert('Esse é um link de GRUPO — não dá pra pré-preencher a mensagem nele. O texto foi copiado, é só colar assim que o grupo abrir.');
+            return link;
+        }
+        let textoWhatsappPendente = '';
+        function abrirWhatsappComTexto(texto, maquinasEnvolvidas) {
+            const comLink = maquinasEnvolvidas.filter(m => m.whatsappLink);
+            if(comLink.length === 0) {
+                window.open('https://wa.me/?text=' + encodeURIComponent(texto));
+            } else if(comLink.length === 1) {
+                window.open(montarLinkWhatsapp(comLink[0].whatsappLink, texto));
+            } else {
+                textoWhatsappPendente = texto;
+                const box = document.getElementById('lista-maquinas-whats');
+                box.innerHTML = comLink.map(m => `<button class="btn btn-primary" style="width:100%; justify-content:center; margin-bottom:8px;" onclick="enviarWhatsappMaquinaEscolhida('${m.id}')">${formatarMaquina(m)}</button>`).join('')
+                    + `<button class="btn back-btn" style="width:100%; justify-content:center;" onclick="closeModal('modal-selecionar-maquina-whats'); window.open('https://wa.me/?text=' + encodeURIComponent(textoWhatsappPendente));">Outro contato...</button>`;
+                document.getElementById('modal-selecionar-maquina-whats').classList.add('active');
+            }
+        }
+        function enviarWhatsappMaquinaEscolhida(idMaquina) {
+            const m = db.maquinas.find(x => x.id === idMaquina);
+            closeModal('modal-selecionar-maquina-whats');
+            if(m) window.open(montarLinkWhatsapp(m.whatsappLink, textoWhatsappPendente));
         }
         function compartilharUPWhatsapp() {
             if(!upSelecionadaParaBlocos) return;
@@ -2298,7 +2364,7 @@
                 const c = calcBloco(b);
                 txt += `• ${b.nome} (${b.status}) — ${formatarNumero(c.realizM3,2)}/${formatarNumero(c.planM3,2)} m³\n`;
             });
-            window.open('https://api.whatsapp.com/send?text=' + encodeURIComponent(txt));
+            abrirWhatsappComTexto(txt, encontrarMaquinasEnvolvidasNaUP(u));
         }
         function compartilharBlocoWhatsapp() {
             if(!blocoSelecionado) return;
@@ -2318,7 +2384,7 @@
                     txt += `• ${new Date(l.data).toLocaleDateString()} — ${formatarMaquina(m)} — ${l.arvores} árv / ${formatarNumero(l.m3,2)} m³\n`;
                 });
             }
-            window.open('https://api.whatsapp.com/send?text=' + encodeURIComponent(txt));
+            abrirWhatsappComTexto(txt, encontrarMaquinasEnvolvidasNoBloco(b));
         }
 
         // ---------- Importar Excel/CSV ----------
@@ -2471,8 +2537,6 @@
             };
             reader.readAsArrayBuffer(file);
         }
-
-        function salvarLinkSheets() { alert("Link salvo no cofre digital da Luna! Preparado para a ponte."); }
 
         // ---------- Backup Local (exportar tudo / restaurar de um arquivo) ----------
         function exportarBackup() {
